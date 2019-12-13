@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC  -Wall -O2 -std=c++14 -Wno-return-local-addr -O3 -DNDEBUG  -shared -Wl,-soname,libc2ga.so -o libc2ga.so CMakeFiles/c2ga.dir/src/c2ga/Mvec.cpp.o 

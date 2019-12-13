@@ -1,0 +1,13 @@
+/usr/local/include/c2ga/BasisTransformations.hpp
+/usr/local/include/c2ga/Constants.hpp
+/usr/local/include/c2ga/DualCoefficients.hpp
+/usr/local/include/c2ga/Geometric.hpp
+/usr/local/include/c2ga/GeometricExplicit.hpp
+/usr/local/include/c2ga/Inner.hpp
+/usr/local/include/c2ga/InnerExplicit.hpp
+/usr/local/include/c2ga/Mvec.hpp
+/usr/local/include/c2ga/Outer.hpp
+/usr/local/include/c2ga/OuterExplicit.hpp
+/usr/local/include/c2ga/Utility.hpp
+/usr/local/include/c2ga/Mvec.cpp
+/usr/local/lib/libc2ga.so

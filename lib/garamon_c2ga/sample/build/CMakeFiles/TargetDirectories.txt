@@ -1,0 +1,3 @@
+/home/torresf/Documents/GAR/lib/garamon_c2ga/sample/build/CMakeFiles/rebuild_cache.dir
+/home/torresf/Documents/GAR/lib/garamon_c2ga/sample/build/CMakeFiles/c2ga_sample.dir
+/home/torresf/Documents/GAR/lib/garamon_c2ga/sample/build/CMakeFiles/edit_cache.dir

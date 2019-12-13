@@ -1,0 +1,1 @@
+/usr/bin/c++   -g   CMakeFiles/c2ga_sample.dir/src/main.cpp.o  -o c2ga_sample -Wl,-rpath,/usr/local/lib /usr/local/lib/libc2ga.so 
