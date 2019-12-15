@@ -48,10 +48,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/torresf/Documents/GAR/lib/garamon_c2ga
+CMAKE_SOURCE_DIR = "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/torresf/Documents/GAR/lib/garamon_c2ga/build
+CMAKE_BINARY_DIR = "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build"
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -126,14 +126,14 @@ install/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/torresf/Documents/GAR/lib/garamon_c2ga/build && $(CMAKE_COMMAND) -E cmake_progress_start /home/torresf/Documents/GAR/lib/garamon_c2ga/build/CMakeFiles /home/torresf/Documents/GAR/lib/garamon_c2ga/build/doc/CMakeFiles/progress.marks
-	cd /home/torresf/Documents/GAR/lib/garamon_c2ga/build && $(MAKE) -f CMakeFiles/Makefile2 doc/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/torresf/Documents/GAR/lib/garamon_c2ga/build/CMakeFiles 0
+	cd "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build" && $(CMAKE_COMMAND) -E cmake_progress_start "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build/CMakeFiles" "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build/doc/CMakeFiles/progress.marks"
+	cd "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build" && $(MAKE) -f CMakeFiles/Makefile2 doc/all
+	$(CMAKE_COMMAND) -E cmake_progress_start "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build/CMakeFiles" 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/torresf/Documents/GAR/lib/garamon_c2ga/build && $(MAKE) -f CMakeFiles/Makefile2 doc/clean
+	cd "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build" && $(MAKE) -f CMakeFiles/Makefile2 doc/clean
 .PHONY : clean
 
 # The main clean target
@@ -143,22 +143,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/torresf/Documents/GAR/lib/garamon_c2ga/build && $(MAKE) -f CMakeFiles/Makefile2 doc/preinstall
+	cd "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build" && $(MAKE) -f CMakeFiles/Makefile2 doc/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/torresf/Documents/GAR/lib/garamon_c2ga/build && $(MAKE) -f CMakeFiles/Makefile2 doc/preinstall
+	cd "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build" && $(MAKE) -f CMakeFiles/Makefile2 doc/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/torresf/Documents/GAR/lib/garamon_c2ga/build && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build" && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 doc/CMakeFiles/html.dir/rule:
-	cd /home/torresf/Documents/GAR/lib/garamon_c2ga/build && $(MAKE) -f CMakeFiles/Makefile2 doc/CMakeFiles/html.dir/rule
+	cd "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build" && $(MAKE) -f CMakeFiles/Makefile2 doc/CMakeFiles/html.dir/rule
 .PHONY : doc/CMakeFiles/html.dir/rule
 
 # Convenience name for target.
@@ -168,7 +168,7 @@ html: doc/CMakeFiles/html.dir/rule
 
 # fast build rule for target.
 html/fast:
-	cd /home/torresf/Documents/GAR/lib/garamon_c2ga/build && $(MAKE) -f doc/CMakeFiles/html.dir/build.make doc/CMakeFiles/html.dir/build
+	cd "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build" && $(MAKE) -f doc/CMakeFiles/html.dir/build.make doc/CMakeFiles/html.dir/build
 .PHONY : html/fast
 
 # Help Target
@@ -195,6 +195,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/torresf/Documents/GAR/lib/garamon_c2ga/build && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build" && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

@@ -43,10 +43,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/torresf/Documents/GAR/lib/garamon_c2ga
+CMAKE_SOURCE_DIR = "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/torresf/Documents/GAR/lib/garamon_c2ga/build
+CMAKE_BINARY_DIR = "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build"
 
 # Utility rule file for html.
 
@@ -54,7 +54,7 @@ CMAKE_BINARY_DIR = /home/torresf/Documents/GAR/lib/garamon_c2ga/build
 include doc/CMakeFiles/html.dir/progress.make
 
 doc/CMakeFiles/html:
-	cd /home/torresf/Documents/GAR/lib/garamon_c2ga/build/doc && /usr/bin/doxygen /home/torresf/Documents/GAR/lib/garamon_c2ga/build/doc/Doxyfile-html
+	cd "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build/doc" && /usr/bin/doxygen /mnt/d/Florian\ Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build/doc/Doxyfile-html
 
 html: doc/CMakeFiles/html
 html: doc/CMakeFiles/html.dir/build.make
@@ -67,10 +67,10 @@ doc/CMakeFiles/html.dir/build: html
 .PHONY : doc/CMakeFiles/html.dir/build
 
 doc/CMakeFiles/html.dir/clean:
-	cd /home/torresf/Documents/GAR/lib/garamon_c2ga/build/doc && $(CMAKE_COMMAND) -P CMakeFiles/html.dir/cmake_clean.cmake
+	cd "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build/doc" && $(CMAKE_COMMAND) -P CMakeFiles/html.dir/cmake_clean.cmake
 .PHONY : doc/CMakeFiles/html.dir/clean
 
 doc/CMakeFiles/html.dir/depend:
-	cd /home/torresf/Documents/GAR/lib/garamon_c2ga/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/torresf/Documents/GAR/lib/garamon_c2ga /home/torresf/Documents/GAR/lib/garamon_c2ga/doc /home/torresf/Documents/GAR/lib/garamon_c2ga/build /home/torresf/Documents/GAR/lib/garamon_c2ga/build/doc /home/torresf/Documents/GAR/lib/garamon_c2ga/build/doc/CMakeFiles/html.dir/DependInfo.cmake --color=$(COLOR)
+	cd "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga" "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/doc" "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build" "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build/doc" "/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/build/doc/CMakeFiles/html.dir/DependInfo.cmake" --color=$(COLOR)
 .PHONY : doc/CMakeFiles/html.dir/depend
 
