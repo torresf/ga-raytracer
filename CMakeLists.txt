@@ -52,17 +52,20 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O2 -std=c++14")
 # includes
 include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${C2GA_INCLUDE_DIRS})
-include_directories(${SDL_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIR} lib/glimac/include third-party/include)
+include_directories(${SDL_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIR} lib/glimac/include gar/include third-party/include)
 
-set(ALL_LIBRARIES glimac ${GLEW_LIBRARY} ${OPENGL_LIBRARIES} ${SDL_LIBRARY})
+set(ALL_LIBRARIES gar glimac ${GLEW_LIBRARY} ${OPENGL_LIBRARIES} ${SDL_LIBRARY})
 
 add_subdirectory(lib/glimac)
+add_subdirectory(gar)
 
 # Compiler le main global
 file(GLOB MAIN "src")
 add_subdirectory(${MAIN})
 
-# compile
+# add_subdirectory(src)
+
+# # compile
 # add_executable(ga-raytracer src/main.cpp)
 #
 # # link

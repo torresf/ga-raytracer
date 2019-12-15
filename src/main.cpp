@@ -5,12 +5,18 @@
 #include <GL/glew.h>
 #include <iostream>
 #include <vector>
+
+// glimac
 #include <glimac/SDLWindowManager.hpp>
 #include <glimac/Program.hpp>
 #include <glimac/FilePath.hpp>
 #include <glimac/glm.hpp>
 
+// gar (Geaometric Algebra Raytracer)
+#include <gar/Light.hpp>
+
 using namespace c2ga;
+using namespace gar;
 
 static const int WIDTH = 500;
 static const int HEIGHT = 500;
@@ -67,8 +73,7 @@ int main() {
 	int padding = 10.f;
 
 	// Light Setup
-	glm::vec2 lightPos(50.f, 100.f);
-	float lightSize = 200.f;
+	Light mainLight;
 	float ambientIntensity = 0.05f;
 
 	// Add shape
@@ -92,15 +97,15 @@ int main() {
 							done = true;
 							break;
 						case SDLK_KP_PLUS:
-							lightSize += 10.f;
-							if (lightSize > 500.f) {
-									lightSize = 500.f;
+							mainLight.size() += 10.f;
+							if (mainLight.size() > 500.f) {
+									mainLight.size() = 500.f;
 							}
 							break;
 						case SDLK_KP_MINUS:
-							lightSize -= 10.f;
-							if (lightSize < 0.f) {
-								lightSize = 0.f;
+							mainLight.size() -= 10.f;
+							if (mainLight.size() < 0.f) {
+								mainLight.size() = 0.f;
 							}
 							break;
 						default:
@@ -108,8 +113,8 @@ int main() {
 					}
 					break;
 				case SDL_MOUSEMOTION:
-					if (windowManager.isMouseButtonPressed(SDL_BUTTON_RIGHT)) {
-						lightPos += glm::vec2(e.motion.xrel, -e.motion.yrel);
+					if (windowManager.isMouseButtonPressed(SDL_BUTTON_LEFT)) {
+						mainLight.pos() += glm::vec2(e.motion.xrel, -e.motion.yrel);
 						break;
 					}
 				default:
@@ -132,13 +137,13 @@ int main() {
 			for (int i = -WIDTH/2 + padding; i < WIDTH/2 - padding; i++) {
 				for (int j = -HEIGHT/2 + padding; j < HEIGHT/2 - padding; j++) {
 
-					float distanceFromLight = sqrt((lightPos.x - i) * (lightPos.x - i) + (lightPos.y - j) * (lightPos.y - j));
-					if (distanceFromLight > lightSize) {
+					float distanceFromLight = sqrt((mainLight.pos().x - i) * (mainLight.pos().x - i) + (mainLight.pos().y - j) * (mainLight.pos().y - j));
+					if (distanceFromLight > mainLight.size()) {
 						// The pixel is too far from the light source
 						glColor3f(ambientIntensity, ambientIntensity, ambientIntensity);
 					} else {
 						// float intensity = lerp(ambientIntensity, 1., 1. - (distance / lightSize));
-						float intensity = easeIn(1.f - (distanceFromLight / lightSize), ambientIntensity, 1.f, 1.f);
+						float intensity = easeIn(1.f - (distanceFromLight / mainLight.size()), ambientIntensity, 1.f, 1.f);
 						glColor3f(intensity, intensity, intensity);
 					}
 
