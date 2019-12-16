@@ -70,7 +70,7 @@ int main() {
 
 	// glDisable(GL_DEPTH_TEST);
 	glm::vec2 pixelPos;
-	int padding = 10.f;
+	int padding = 0.f;
 
 	// Light Setup
 	Light mainLight(150.f, glm::vec2(20.f, 40.f));
@@ -80,29 +80,53 @@ int main() {
 	glm::vec2 circlePos(-50.f, 80.f);
 	float circleRadius = 40.f;
 
+
+	Mvec<double> n0 = 0.5 * (ei<double>() - e0<double>());
+	Mvec<double> ni = e0<double>() + ei<double>();
+
+	double x1 = 10.0;
+	double y1 = 20.0;
+
+	double x2 = 20.0;
+	double y2 = 50.0;
+
+	double x3 = 50.0;
+	double y3 = 20.0;
+
+	// Mvec<double> pt1;
+	// pt1[scalar] = 1.0;
+	// pt1[E1] = 10.0;
+	// pt1[E2] = 20.0;
+	// pt1[Ei] = 0.5*(pt1[E1]*pt1[E1]+pt1[E2]*pt1[E2]);
+
 	Mvec<double> pt1;
-	pt1[scalar] = 1.0;
-	pt1[E1] = 10.0;
-	pt1[E2] = 20.0;
-	pt1[Ei] = 0.5*(pt1[E1]*pt1[E1]+pt1[E2]*pt1[E2]);
+	pt1 = n0 + x1*e1<double>() - y1*e2<double>() + 0.5*(x1*x1+y1*y1)*ni;
+
+	// Mvec<double> pt2;
+	// pt2[scalar] = 1.0;
+	// pt2[E1] = 20.0;
+	// pt2[E2] = 50.0;
+	// pt2[Ei] = 0.5*(pt2[E1]*pt2[E1]+pt2[E2]*pt2[E2]);
 
 	Mvec<double> pt2;
-	pt2[scalar] = 1.0;
-	pt2[E1] = 20.0;
-	pt2[E2] = 50.0;
-	pt2[Ei] = 0.5*(pt2[E1]*pt2[E1]+pt2[E2]*pt2[E2]);
+	pt2 = n0 + x2*e1<double>() - y2*e2<double>() + 0.5*(x2*x2+y2*y2)*ni;
 
 	Mvec<double> pt3;
-	pt3[scalar] = 1.0;
-	pt3[E1] = 50.0;
-	pt3[E2] = 20.0;
-	pt3[Ei] = 0.5*(pt3[E1]*pt3[E1]+pt3[E2]*pt3[E2]);
+	pt3 = n0 + x3*e1<double>() - y3*e2<double>() + 0.5*(x3*x3+y3*y3)*ni;
+
+	// Mvec<double> pt3;
+	// pt3[scalar] = 1.0;
+	// pt3[E1] = 50.0;
+	// pt3[E2] = 20.0;
+	// pt3[Ei] = 0.5*(pt3[E1]*pt3[E1]+pt3[E2]*pt3[E2]);
 
 	Mvec<double> circle = pt1 ^ pt2 ^ pt3;
 	Mvec<double> centroid = (pt1 + pt2 + pt3) / 3;
-	std::cout << "circle.grade() : " << circle.grade() << std::endl;
+	Mvec<double> circum = -circle / (ni < circle);
+	std::cout << "pt1 : " << pt1 << std::endl;
 	std::cout << "circle : " << circle << std::endl;
 	std::cout << "centroid : " << centroid << std::endl;
+	std::cout << "circum : " << circum << std::endl;
 
 	// Application loop:
 	bool done = false;
@@ -139,8 +163,8 @@ int main() {
 				case SDL_MOUSEMOTION:
 					if (windowManager.isMouseButtonPressed(SDL_BUTTON_LEFT)) {
 						mainLight.pos() += glm::vec2(e.motion.xrel, -e.motion.yrel);
-						pt1[E1] += e.motion.xrel;
-						pt1[E2] -= e.motion.yrel;
+						pt1[E1] = mainLight.pos().x;
+						pt1[E2] = mainLight.pos().y;
 						break;
 					}
 				default:
@@ -184,6 +208,7 @@ int main() {
 
 			circle = pt1 ^ pt2 ^ pt3;
 			centroid = (pt1 + pt2 + pt3) / 3;
+			circum = -circle / (ni < circle);
 
 			glColor3f(1.f, 0.f, 0.f);
 			// glPointSize(10);
@@ -192,6 +217,8 @@ int main() {
 			glVertex2f(pt3[E1], pt3[E2]);
 			glColor3f(0.f, 0.f, 1.f);
 			glVertex2f(centroid[E1], centroid[E2]);
+			glColor3f(0.f, 1.f, 0.f);
+			glVertex2f(circum[E1], circum[E2]);
 		glEnd();
 
 		drawLandmark();
