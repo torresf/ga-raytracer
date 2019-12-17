@@ -1,10 +1,11 @@
 // C2GA
 #include <c2ga/Mvec.hpp>
 
-// OpenGL3
+// C++ / OpenGL3
 #include <GL/glew.h>
 #include <iostream>
 #include <vector>
+#include <math.h>
 
 // glimac
 #include <glimac/SDLWindowManager.hpp>
@@ -20,6 +21,9 @@ using namespace gar;
 
 static const int WIDTH = 500;
 static const int HEIGHT = 500;
+
+static const Mvec<double> NI = ei<double>() + e0<double>();
+static const Mvec<double> N0 = 0.5 * (ei<double>() - e0<double>());
 
 void drawLandmark() {
 	float padding = 10.f;
@@ -41,11 +45,21 @@ float lerp(float a, float b, float t) {
 	return a + t * (b - a);
 }
 
-
 float easeIn(float t, float b, float c, float d) {
 	return c*(t/d)*t + b;
 }
 
+Mvec<double> point(double x = 0.0, double y = 0.0) {
+	return N0 + x*e1<double>() + y*e2<double>() + 0.5*(x*x+y*y)*NI;
+}
+
+Mvec<double> circle(double x = 0.0, double y = 0.0, double r = 10.0) {
+	return !(point(x, y) - pow(r, 2/2*NI));
+}
+
+Mvec<double> projectPointOnCircle(Mvec<double> p, Mvec<double> c) {
+	return (p^NI) < c*c;
+}
 
 int main() {
 	std::cout << "Lancement du programme..." << std::endl;
@@ -81,8 +95,8 @@ int main() {
 	float circleRadius = 40.f;
 
 
-	Mvec<double> n0 = 0.5 * (ei<double>() - e0<double>());
-	Mvec<double> ni = e0<double>() + ei<double>();
+	// Mvec<double> n0 = 0.5 * (ei<double>() - e0<double>());
+	// Mvec<double> ni = e0<double>() + ei<double>();
 
 	double x1 = 10.0;
 	double y1 = 20.0;
@@ -99,8 +113,6 @@ int main() {
 	// pt1[E2] = 20.0;
 	// pt1[Ei] = 0.5*(pt1[E1]*pt1[E1]+pt1[E2]*pt1[E2]);
 
-	Mvec<double> pt1;
-	pt1 = n0 + x1*e1<double>() - y1*e2<double>() + 0.5*(x1*x1+y1*y1)*ni;
 
 	// Mvec<double> pt2;
 	// pt2[scalar] = 1.0;
@@ -108,25 +120,32 @@ int main() {
 	// pt2[E2] = 50.0;
 	// pt2[Ei] = 0.5*(pt2[E1]*pt2[E1]+pt2[E2]*pt2[E2]);
 
-	Mvec<double> pt2;
-	pt2 = n0 + x2*e1<double>() - y2*e2<double>() + 0.5*(x2*x2+y2*y2)*ni;
-
-	Mvec<double> pt3;
-	pt3 = n0 + x3*e1<double>() - y3*e2<double>() + 0.5*(x3*x3+y3*y3)*ni;
-
 	// Mvec<double> pt3;
 	// pt3[scalar] = 1.0;
 	// pt3[E1] = 50.0;
 	// pt3[E2] = 20.0;
 	// pt3[Ei] = 0.5*(pt3[E1]*pt3[E1]+pt3[E2]*pt3[E2]);
 
-	Mvec<double> circle = pt1 ^ pt2 ^ pt3;
+	Mvec<double> pt1 = point(x1, y1);
+	Mvec<double> pt2 = point(x2, y2);
+	Mvec<double> pt3 = point(x3, y3);
+
+	Mvec<double> circle1 = pt1 ^ pt2 ^ pt3;
+	Mvec<double> circle2 = (20.0*e1<double>()^e2<double>()^NI) + (5.0*N0^e1<double>()^e2<double>());
+	Mvec<double> circle3 = circle(40.0, 60.0, 23.0);
 	Mvec<double> centroid = (pt1 + pt2 + pt3) / 3;
-	Mvec<double> circum = -circle / (ni < circle);
+	Mvec<double> circum = -circle2 / (NI < circle2);
 	std::cout << "pt1 : " << pt1 << std::endl;
-	std::cout << "circle : " << circle << std::endl;
+	std::cout << "circle1 : " << circle1 << std::endl;
+	std::cout << "circle2 : " << circle2 << std::endl;
+	std::cout << "circle3 : " << circle3 << std::endl;
 	std::cout << "centroid : " << centroid << std::endl;
 	std::cout << "circum : " << circum << std::endl;
+
+	Mvec<double> pt4 = point(0.0, 0.0);
+	Mvec<double> pt5 = projectPointOnCircle(pt4, circle2);
+	std::cout << "pt4 : " << pt4 << std::endl;
+	std::cout << "pt5 : " << pt5 << std::endl;
 
 	// Application loop:
 	bool done = false;
@@ -163,8 +182,8 @@ int main() {
 				case SDL_MOUSEMOTION:
 					if (windowManager.isMouseButtonPressed(SDL_BUTTON_LEFT)) {
 						mainLight.pos() += glm::vec2(e.motion.xrel, -e.motion.yrel);
-						pt1[E1] = mainLight.pos().x;
-						pt1[E2] = mainLight.pos().y;
+						pt4[E1] = mainLight.pos().x;
+						pt4[E2] = mainLight.pos().y;
 						break;
 					}
 				default:
@@ -206,9 +225,11 @@ int main() {
 				}
 			}
 
-			circle = pt1 ^ pt2 ^ pt3;
+			circle1 = pt1 ^ pt2 ^ pt3;
 			centroid = (pt1 + pt2 + pt3) / 3;
-			circum = -circle / (ni < circle);
+			pt5 = projectPointOnCircle(pt4, circle3);
+			// circum = -circle / (NI < circle);
+			circum = -circle2 / (NI < circle2);
 
 			glColor3f(1.f, 0.f, 0.f);
 			// glPointSize(10);
@@ -217,7 +238,12 @@ int main() {
 			glVertex2f(pt3[E1], pt3[E2]);
 			glColor3f(0.f, 0.f, 1.f);
 			glVertex2f(centroid[E1], centroid[E2]);
+			// Point on light
+			glColor3f(1.f, 1.f, 0.f);
+			glVertex2f(pt4[E1], pt4[E2]);
+			// Light Center projected on circle
 			glColor3f(0.f, 1.f, 0.f);
+			glVertex2f(pt5[E1], pt5[E2]);
 			glVertex2f(circum[E1], circum[E2]);
 		glEnd();
 
