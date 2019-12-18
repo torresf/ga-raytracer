@@ -53,6 +53,10 @@ Mvec<double> point(double x = 0.0, double y = 0.0) {
 	return N0 + x*e1<double>() + y*e2<double>() + 0.5*(x*x+y*y)*NI;
 }
 
+Mvec<double> line(double a = 0.0, double b = 0.0, double c = 0.0) {
+	return a*e1<double>() + b*e2<double>() + c*NI;
+}
+
 Mvec<double> circle(double x = 0.0, double y = 0.0, double r = 10.0) {
 	return !(point(x, y) - pow(r, 2/2*NI));
 }
@@ -94,10 +98,6 @@ int main() {
 	glm::vec2 circlePos(-50.f, 80.f);
 	float circleRadius = 40.f;
 
-
-	// Mvec<double> n0 = 0.5 * (ei<double>() - e0<double>());
-	// Mvec<double> ni = e0<double>() + ei<double>();
-
 	double x1 = 10.0;
 	double y1 = 20.0;
 
@@ -112,7 +112,6 @@ int main() {
 	// pt1[E1] = 10.0;
 	// pt1[E2] = 20.0;
 	// pt1[Ei] = 0.5*(pt1[E1]*pt1[E1]+pt1[E2]*pt1[E2]);
-
 
 	// Mvec<double> pt2;
 	// pt2[scalar] = 1.0;
@@ -130,22 +129,31 @@ int main() {
 	Mvec<double> pt2 = point(x2, y2);
 	Mvec<double> pt3 = point(x3, y3);
 
+	Mvec<double> l1 = line(0.0, 1.0, 0.0);
+	Mvec<double> l2 = pt1 ^ pt2 ^ NI;
+
 	Mvec<double> circle1 = pt1 ^ pt2 ^ pt3;
 	Mvec<double> circle2 = (20.0*e1<double>()^e2<double>()^NI) + (5.0*N0^e1<double>()^e2<double>());
 	Mvec<double> circle3 = circle(40.0, 60.0, 23.0);
+
 	Mvec<double> centroid = (pt1 + pt2 + pt3) / 3;
 	Mvec<double> circum = -circle2 / (NI < circle2);
+
 	std::cout << "pt1 : " << pt1 << std::endl;
 	std::cout << "circle1 : " << circle1 << std::endl;
 	std::cout << "circle2 : " << circle2 << std::endl;
 	std::cout << "circle3 : " << circle3 << std::endl;
+	std::cout << "circle3.norm() : " << circle3.norm() << std::endl;
 	std::cout << "centroid : " << centroid << std::endl;
 	std::cout << "circum : " << circum << std::endl;
 
-	Mvec<double> pt4 = point(0.0, 0.0);
-	Mvec<double> pt5 = projectPointOnCircle(pt4, circle2);
+	Mvec<double> pt4 = point(1.0, 2.0);
+	Mvec<double> pt5 = projectPointOnCircle(pt4, circle1);
 	std::cout << "pt4 : " << pt4 << std::endl;
 	std::cout << "pt5 : " << pt5 << std::endl;
+
+	Mvec<double> pt6 = l1 | circle3;
+	std::cout << "pt6 : " << pt6 << std::endl;
 
 	// Application loop:
 	bool done = false;
@@ -182,8 +190,8 @@ int main() {
 				case SDL_MOUSEMOTION:
 					if (windowManager.isMouseButtonPressed(SDL_BUTTON_LEFT)) {
 						mainLight.pos() += glm::vec2(e.motion.xrel, -e.motion.yrel);
-						pt4[E1] = mainLight.pos().x;
-						pt4[E2] = mainLight.pos().y;
+						pt4 = point(mainLight.pos().x, mainLight.pos().y);
+						l1 = line(0.0, mainLight.pos().y, 0.0);
 						break;
 					}
 				default:
@@ -225,25 +233,30 @@ int main() {
 				}
 			}
 
+			pt6 = l1 | circle1;
 			circle1 = pt1 ^ pt2 ^ pt3;
 			centroid = (pt1 + pt2 + pt3) / 3;
-			pt5 = projectPointOnCircle(pt4, circle3);
+			pt5 = projectPointOnCircle(pt4, circle1);
 			// circum = -circle / (NI < circle);
 			circum = -circle2 / (NI < circle2);
 
+			// Red Triangle
 			glColor3f(1.f, 0.f, 0.f);
-			// glPointSize(10);
 			glVertex2f(pt1[E1], pt1[E2]);
 			glVertex2f(pt2[E1], pt2[E2]);
 			glVertex2f(pt3[E1], pt3[E2]);
+
+			// Centroid
 			glColor3f(0.f, 0.f, 1.f);
 			glVertex2f(centroid[E1], centroid[E2]);
+
 			// Point on light
 			glColor3f(1.f, 1.f, 0.f);
 			glVertex2f(pt4[E1], pt4[E2]);
 			// Light Center projected on circle
 			glColor3f(0.f, 1.f, 0.f);
 			glVertex2f(pt5[E1], pt5[E2]);
+			glVertex2f(pt6[E1], pt6[E2]);
 			glVertex2f(circum[E1], circum[E2]);
 		glEnd();
 
