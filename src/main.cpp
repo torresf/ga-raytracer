@@ -22,7 +22,7 @@ using namespace gar;
 static const int WIDTH = 500;
 static const int HEIGHT = 500;
 
-static const Mvec<double> NI = ei<double>() + e0<double>();
+static const Mvec<double> NI = ei<double>();
 static const Mvec<double> N0 = 0.5 * (ei<double>() - e0<double>());
 
 void drawLandmark() {
@@ -49,20 +49,45 @@ float easeIn(float t, float b, float c, float d) {
 	return c*(t/d)*t + b;
 }
 
-Mvec<double> point(double x = 0.0, double y = 0.0) {
-	return N0 + x*e1<double>() + y*e2<double>() + 0.5*(x*x+y*y)*NI;
+// Mvec<double> point(double x = 0.0, double y = 0.0) {
+// 	return N0 + x*e1<double>() + y*e2<double>() + 0.5*(x*x+y*y)*NI;
+// }
+
+template<typename T>
+Mvec<T> point(const T &x, const T &y){
+
+	Mvec<T> mv;
+	mv[E1] = x;
+	mv[E2] = y;
+	mv[Ei] = 0.5 * mv.quadraticNorm();
+	mv[E0] = 1.0;
+
+	return mv;
 }
 
-Mvec<double> line(double a = 0.0, double b = 0.0, double c = 0.0) {
-	return a*e1<double>() + b*e2<double>() + c*NI;
+template<typename T>
+Mvec<T> line(const Mvec<T> &p1, const Mvec<T> &p2) {
+	return p1 ^ p2 ^ ei<T>();
 }
 
-Mvec<double> circle(double x = 0.0, double y = 0.0, double r = 10.0) {
+template<typename T>
+Mvec<T> circle(const T &x, const T &y, const T &r) {
 	return !(point(x, y) - pow(r, 2/2*NI));
 }
 
-Mvec<double> projectPointOnCircle(Mvec<double> p, Mvec<double> c) {
+template<typename T>
+Mvec<T> projectPointOnCircle(const Mvec<T> &p, const Mvec<T> &c) {
 	return (p^NI) < c*c;
+}
+
+template<typename T>
+void drawPoint(const Mvec<T> &p) {
+	glVertex2f(p[E1], p[E2]);
+}
+
+template<typename T>
+float distance(const Mvec<T> &p1, const Mvec<T> &p2) {
+	return sqrt(pow(p2[E1] - p1[E1], 2) + pow(p2[E2]-p1[E1], 2));
 }
 
 int main() {
@@ -74,7 +99,6 @@ int main() {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluOrtho2D(-WIDTH / 2.f, WIDTH / 2.f, -HEIGHT / 2.f, HEIGHT / 2.f);
-	// gluOrtho2D(-1.f, 1.f, -1.f, 1.f);
 
 	// Initialize glew for OpenGL3+ support
 	GLenum glewInitError = glewInit();
@@ -98,62 +122,50 @@ int main() {
 	glm::vec2 circlePos(-50.f, 80.f);
 	float circleRadius = 40.f;
 
-	double x1 = 10.0;
-	double y1 = 20.0;
+	Mvec<double> pt1 = point(10.0, 20.0);
+	Mvec<double> pt2 = point(20.0, 50.0);
+	Mvec<double> pt3 = point(50.0, 20.0);
 
-	double x2 = 20.0;
-	double y2 = 50.0;
-
-	double x3 = 50.0;
-	double y3 = 20.0;
-
-	// Mvec<double> pt1;
-	// pt1[scalar] = 1.0;
-	// pt1[E1] = 10.0;
-	// pt1[E2] = 20.0;
-	// pt1[Ei] = 0.5*(pt1[E1]*pt1[E1]+pt1[E2]*pt1[E2]);
-
-	// Mvec<double> pt2;
-	// pt2[scalar] = 1.0;
-	// pt2[E1] = 20.0;
-	// pt2[E2] = 50.0;
-	// pt2[Ei] = 0.5*(pt2[E1]*pt2[E1]+pt2[E2]*pt2[E2]);
-
-	// Mvec<double> pt3;
-	// pt3[scalar] = 1.0;
-	// pt3[E1] = 50.0;
-	// pt3[E2] = 20.0;
-	// pt3[Ei] = 0.5*(pt3[E1]*pt3[E1]+pt3[E2]*pt3[E2]);
-
-	Mvec<double> pt1 = point(x1, y1);
-	Mvec<double> pt2 = point(x2, y2);
-	Mvec<double> pt3 = point(x3, y3);
-
-	Mvec<double> l1 = line(0.0, 1.0, 0.0);
-	Mvec<double> l2 = pt1 ^ pt2 ^ NI;
-
+	Mvec<double> line1 = pt1 ^ pt2 ^ ei<double>();
 	Mvec<double> circle1 = pt1 ^ pt2 ^ pt3;
-	Mvec<double> circle2 = (20.0*e1<double>()^e2<double>()^NI) + (5.0*N0^e1<double>()^e2<double>());
-	Mvec<double> circle3 = circle(40.0, 60.0, 23.0);
-
+	Mvec<double> circle2 = circle(40.0, 60.0, 23.0);
 	Mvec<double> centroid = (pt1 + pt2 + pt3) / 3;
-	Mvec<double> circum = -circle2 / (NI < circle2);
+	Mvec<double> circum = -circle1 / (ei<double>() < circle1);
 
+	// Normalize point
+	// pt1 /= - pt1 | ei<double>(); // = composante en E0
+	// pt2 /= - pt2 | ei<double>(); // = composante en E0
+	// pt3 /= - pt3 | ei<double>(); // = composante en E0
+
+	std::cout << "NI : " << ei<double>() << std::endl;
 	std::cout << "pt1 : " << pt1 << std::endl;
+	std::cout << "line1 : " << line1 << std::endl;
+	std::cout << "line1.grade() : " << line1.grade() << std::endl;
 	std::cout << "circle1 : " << circle1 << std::endl;
 	std::cout << "circle2 : " << circle2 << std::endl;
-	std::cout << "circle3 : " << circle3 << std::endl;
-	std::cout << "circle3.norm() : " << circle3.norm() << std::endl;
+	std::cout << "circle1.grade() : " << circle1.grade() << std::endl;
+	std::cout << "circle2.grade() : " << circle2.grade() << std::endl;
 	std::cout << "centroid : " << centroid << std::endl;
 	std::cout << "circum : " << circum << std::endl;
 
-	Mvec<double> pt4 = point(1.0, 2.0);
+	Mvec<double> pt4 = point(0.0, 0.0);
 	Mvec<double> pt5 = projectPointOnCircle(pt4, circle1);
 	std::cout << "pt4 : " << pt4 << std::endl;
 	std::cout << "pt5 : " << pt5 << std::endl;
 
-	Mvec<double> pt6 = l1 | circle3;
-	std::cout << "pt6 : " << pt6 << std::endl;
+	Mvec<double> a = point(-40, -40);
+	Mvec<double> b = point(-40, -30);
+	Mvec<double> c = point(-30, -20);
+	Mvec<double> d = point(-20, -20);
+
+	Mvec<double> l1 = line(a, b);
+	Mvec<double> l2 = line(c, d);
+
+	Mvec<double> intersection = l1 | l2;
+
+	std::cout << "l1 : " << l1 << std::endl;
+	std::cout << "l2 : " << l2 << std::endl;
+	std::cout << "intersection : " << intersection << std::endl;
 
 	// Application loop:
 	bool done = false;
@@ -190,8 +202,7 @@ int main() {
 				case SDL_MOUSEMOTION:
 					if (windowManager.isMouseButtonPressed(SDL_BUTTON_LEFT)) {
 						mainLight.pos() += glm::vec2(e.motion.xrel, -e.motion.yrel);
-						pt4 = point(mainLight.pos().x, mainLight.pos().y);
-						l1 = line(0.0, mainLight.pos().y, 0.0);
+						pt1 = pt4 = point(mainLight.pos().x, mainLight.pos().y);
 						break;
 					}
 				default:
@@ -208,6 +219,14 @@ int main() {
 
 		// Set point size (1 = 1px)
 		glPointSize(5.f);
+
+		circle1 = pt1 ^ pt2 ^ pt3;
+		centroid = (pt1 + pt2 + pt3) / 3;
+		circum = -circle1 / (ei<double>() < circle1);
+		pt5 = projectPointOnCircle(pt4, circle1);
+		circlePos.x = circum[E1];
+		circlePos.y = circum[E2];
+		circleRadius = distance(circum, pt1);
 
 		// Compute canvas
 		glBegin(GL_POINTS);
@@ -233,31 +252,32 @@ int main() {
 				}
 			}
 
-			pt6 = l1 | circle1;
-			circle1 = pt1 ^ pt2 ^ pt3;
-			centroid = (pt1 + pt2 + pt3) / 3;
-			pt5 = projectPointOnCircle(pt4, circle1);
-			// circum = -circle / (NI < circle);
-			circum = -circle2 / (NI < circle2);
-
-			// Red Triangle
+			// RED
 			glColor3f(1.f, 0.f, 0.f);
-			glVertex2f(pt1[E1], pt1[E2]);
-			glVertex2f(pt2[E1], pt2[E2]);
-			glVertex2f(pt3[E1], pt3[E2]);
+			drawPoint(pt1);
+			drawPoint(pt2);
+			drawPoint(pt3);
+			drawPoint(intersection);
 
-			// Centroid
+			// BLUE
 			glColor3f(0.f, 0.f, 1.f);
-			glVertex2f(centroid[E1], centroid[E2]);
+			drawPoint(centroid);
+			drawPoint(a);
+			drawPoint(b);
 
+			// YELLOW
 			// Point on light
 			glColor3f(1.f, 1.f, 0.f);
-			glVertex2f(pt4[E1], pt4[E2]);
+			drawPoint(pt4);
+
+			// GREEN
 			// Light Center projected on circle
 			glColor3f(0.f, 1.f, 0.f);
-			glVertex2f(pt5[E1], pt5[E2]);
-			glVertex2f(pt6[E1], pt6[E2]);
-			glVertex2f(circum[E1], circum[E2]);
+			drawPoint(pt5);
+			drawPoint(circum);
+
+			drawPoint(c);
+			drawPoint(d);
 		glEnd();
 
 		drawLandmark();
@@ -265,36 +285,6 @@ int main() {
 		// Update the display
 		windowManager.swapBuffers();
 	}
-
-
-	// // sample instructions
-	// std::cout << "metric : \n" << c2ga::metric << std::endl;
-	//
-	// // accessor
-	// Mvec<double> mv1;
-	// mv1[scalar] = 1.0;
-	// mv1[E0] = 42.0;
-	// std::cout << "mv1 : " << mv1 << std::endl;
-	//
-	// Mvec<double> mv2;
-	// mv2[E0] = 1.0;
-	// mv2[E1] = 2.0;
-	// mv2 += I<double>() + 2*e01<double>();
-	// std::cout << "mv2 : " << mv2 << std::endl << std::endl;
-	//
-	// // some products
-	// std::cout << "outer product     : " << (mv1 ^ mv2) << std::endl;
-	// std::cout << "inner product     : " << (mv1 | mv2) << std::endl;
-	// std::cout << "geometric product : " << (mv1 * mv2) << std::endl;
-	// std::cout << "left contraction  : " << (mv1 < mv2) << std::endl;
-	// std::cout << "right contraction : " << (mv1 > mv2) << std::endl;
-	// std::cout << std::endl;
-	//
-	// // some tools
-	// std::cout << "grade : " << mv1.grade()  << std::endl;
-	// std::cout << "norm  : " << mv1.norm()  << std::endl;
-	// mv1.clear();
-	// if (mv1.isEmpty()) std::cout << "mv1 is empty: ok" << std::endl;
 
 	std::cout << "Fin du programme." << std::endl;
 	return EXIT_SUCCESS;
