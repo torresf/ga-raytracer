@@ -15,7 +15,7 @@ cout << (mv1 ^ mv2) << endl;       // parenthesis needed (because of the priorit
 // ga constants
 c2ga::I<double>();                 // pseudo-scalar of the algebra
 c2ga::Iinv<double>()               // inverse pseudo-scalar of the algebra
-c2ga::e01<double>();               // any multivector components 
+c2ga::e01<double>();               // any multivector components
 
 
 // initialisation and component access
@@ -91,5 +91,3 @@ mv3 = !mv1;                        // dual of the multivector
 mv3 = mv1.outerPrimalDual(mv2);    // fast version of mv3 = mv1 ^ mv2.dual();
 mv3 = mv1.outerDualPrimal(mv2);    // fast version of mv3 = mv1.dual() ^ mv2;
 mv3 = mv1.outerDualDual(mv2);      // fast version of mv3 = mv1.dual() ^ mv2.dual();
-
-
