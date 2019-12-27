@@ -60,7 +60,7 @@ Mvec<T> point(const T &x, const T &y){
 
 template<typename T>
 Mvec<T> line(const Mvec<T> &p1, const Mvec<T> &p2) {
-	return p1 ^ ei<T>() ^ p2;
+	return p1 ^ p2 ^ ei<T>();
 }
 
 template<typename T>
@@ -75,7 +75,7 @@ Mvec<T> circle(const T &x, const T &y, const T &r) {
 
 template<typename T>
 Mvec<T> projectPointOnCircle(const Mvec<T> &p, const Mvec<T> &c) {
-	return (p ^ ei<T>()) < (c*c);
+	return (p ^ ei<T>()) < (c * c);
 }
 
 template<typename T>
@@ -125,7 +125,13 @@ void DrawCircle(const Mvec<T> &center, float r, int num_segments = 64) {
 
 template<typename T>
 float distance(const Mvec<T> &p1, const Mvec<T> &p2) {
-	return sqrt(pow(p2[E1] - p1[E1], 2) + pow(p2[E2]-p1[E1], 2));
+	// return sqrt(pow(p2[E1] - p1[E1], 2) + pow(p2[E2]-p1[E1], 2));
+	return (p2 - p1).norm();
+}
+
+template<typename T>
+Mvec<T> regressive(const Mvec<T> &mv1, const Mvec<T> &mv2) {
+	return !((!mv1) ^ (!mv2));
 }
 
 int main() {
@@ -155,21 +161,21 @@ int main() {
 	int padding = 0.f;
 
 	// Light Setup
-	Light mainLight(150.f, glm::vec2(20.f, 40.f));
+	Light mainLight(150.f, glm::vec2(90.f, 30.f));
 	float ambientIntensity = 0.05f;
 
 	// Add circle
 	glm::vec2 circlePos(-50.f, 80.f);
 	float circleRadius = 40.f;
 	glm::vec2 circle2Pos(0.f, 0.f);
-	float circle2Radius = 80.f;
-	float circle3Radius = 80.f;
+	float circle2Radius = 40.f;
+	float circle3Radius = 40.f;
 
-	Mvec<double> pt1 = point(10.0, 20.0);
-	Mvec<double> pt2 = point(20.0, 50.0);
+	Mvec<double> pt1 = point(90.0, 30.0);
+	Mvec<double> pt2 = point(30.0, 50.0);
 	Mvec<double> pt3 = point(50.0, 20.0);
 
-	Mvec<double> line1 = pt1 ^ pt2 ^ ei<double>();
+	Mvec<double> l0 = pt1 ^ pt2 ^ ei<double>();
 	Mvec<double> circle1 = pt1 ^ pt2 ^ pt3;
 	Mvec<double> circle2 = circle(-100, 50, 80);
 	Mvec<double> circle3 = circle(-120, 50, 80);
@@ -179,13 +185,11 @@ int main() {
 	Mvec<double> circum3 = -circle3 / (ei<double>() < circle3);
 
 	// Normalize point
-	// pt1 /= - pt1 | ei<double>(); // = composante en E0
-	// pt2 /= - pt2 | ei<double>(); // = composante en E0
-	// pt3 /= - pt3 | ei<double>(); // = composante en E0
+	// point /= - point | ei<double>(); // = composante en E0
 
 	std::cout << "pt1 : " << pt1 << std::endl;
-	std::cout << "line1 : " << line1 << std::endl;
-	std::cout << "line1.grade() : " << line1.grade() << std::endl;
+	std::cout << "l0 : " << l0 << std::endl;
+	std::cout << "l0.grade() : " << l0.grade() << std::endl;
 	std::cout << "circle1 : " << circle1 << std::endl;
 	std::cout << "circle2 : " << circle2 << std::endl;
 	std::cout << "centroid : " << centroid << std::endl;
@@ -201,19 +205,29 @@ int main() {
 	std::cout << "pt4 : " << pt4 << std::endl;
 	std::cout << "pt5 : " << pt5 << std::endl;
 
-	Mvec<double> a = point(-80, -80);
-	Mvec<double> b = point(-80, -40);
-	Mvec<double> c = point(-30, -20);
-	Mvec<double> d = point(-20, -20);
+	Mvec<double> a = point(-120, -150);
+	Mvec<double> b = point(-120, -50);
+	Mvec<double> c = point(-200, -60);
+	Mvec<double> d = point(-100, -120);
 
 	Mvec<double> l1 = line(a, b);
 	Mvec<double> l2 = line(c, d);
 
-	Mvec<double> intersection = l1 | l2;
+	Mvec<double> intersection = e0<double>() | regressive(l1, l2);
+	intersection /= - intersection | ei<double>(); // = composante en E0
+
+	Mvec<double> intersection2 = e0<double>() | regressive(l1, l0);
+	intersection2 /= - intersection2 | ei<double>();
+
+	Mvec<double> intersection3 = e0<double>() | regressive(l2, l0);
+	intersection3 /= - intersection3 | ei<double>();
 
 	std::cout << "l1 : " << l1 << std::endl;
+	std::cout << "l1.grade() : " << l1.grade() << std::endl;
 	std::cout << "l2 : " << l2 << std::endl;
+	std::cout << "l2.grade() : " << l2.grade() << std::endl;
 	std::cout << "intersection : " << intersection << std::endl;
+	std::cout << "intersection.grade() : " << intersection.grade() << std::endl;
 
 	Mvec<double> pp1 = circle1 / circle2;
 	std::cout << "pp1 : " << pp1 << std::endl;
@@ -222,19 +236,17 @@ int main() {
 	Mvec<double> pp2 = pt1 ^ pt2;
 	std::cout << "pp2 : " << pp2 << std::endl;
 	std::cout << "pp2.grade() : " << pp2.grade() << std::endl;
-	std::cout << "pp2 dual : " << !pp2 << std::endl;
-	std::cout << "pp2 dual grade : " << (!pp2).grade() << std::endl;
+	Mvec<double> pp2_1;
 
-	Mvec<double> pp3 = l1 / circle2;
+	Mvec<double> pp3 = regressive(circle1, circle2);
 	std::cout << "pp3 : " << pp3 << std::endl;
 	std::cout << "pp3.grade() : " << pp3.grade() << std::endl;
 
-	Mvec<double> pp4_bis = circle2 * circle3;
-	Mvec<double> pp4 = ((circle2 * Iinv<double>()) ^ (circle3*Iinv<double>())) * I<double>()  ;
+	Mvec<double> pp4 = regressive(circle1, l2);
 	std::cout << "pp4 : " << pp4 << std::endl;
 	std::cout << "pp4.grade() : " << pp4.grade() << std::endl;
-	std::cout << "pp4_bis : " << pp4_bis << std::endl;
-	std::cout << "pp4_bis.grade() : " << pp4_bis.grade() << std::endl;
+	Mvec<double> pp4_center = pp4 / (- pp4 | ei<double>());
+	pp4_center = -pp4_center;
 
 
 	// Application loop:
@@ -300,24 +312,33 @@ int main() {
 		circle2Pos.x = circum2[E1];
 		circle2Pos.y = circum2[E2];
 		pp1 = circle1 | circle2;
-		// std::cout << "pp1 : " << pp1 << std::endl;
 		pp2 = pt1 ^ pt2;
+		pp2_1 = pp2 / (- pp2 | ei<double>());
+		pp2_1 = -pp2_1;
+		pp4 = regressive(circle1, l2);
+		pp4_center = pp4 / (- pp4 | ei<double>());
+		pp4_center = -pp4_center;
 
+		l0 = pt1 ^ pt2 ^ ei<double>();
+		intersection2 = e0<double>() | regressive(l1, l0);
+		intersection2 /= - intersection2 | ei<double>();
+		intersection3 = e0<double>() | regressive(l2, l0);
+		intersection3 /= - intersection3 | ei<double>();
 
 		// Compute canvas
 		glBegin(GL_POINTS);
 			for (int i = -WIDTH/2 + padding; i < WIDTH/2 - padding; i++) {
 				for (int j = -HEIGHT/2 + padding; j < HEIGHT/2 - padding; j++) {
 
-					// float distanceFromLight = sqrt((mainLight.pos().x - i) * (mainLight.pos().x - i) + (mainLight.pos().y - j) * (mainLight.pos().y - j));
-					// if (distanceFromLight > mainLight.size()) {
-					// 	// The pixel is too far from the light source
-					// 	glColor3f(ambientIntensity, ambientIntensity, ambientIntensity);
-					// } else {
-					// 	// float intensity = lerp(ambientIntensity, 1., 1. - (distance / lightSize));
-					// 	float intensity = easeIn(1.f - (distanceFromLight / mainLight.size()), ambientIntensity, 1.f, 1.f);
-					// 	glColor3f(intensity, intensity, intensity);
-					// }
+					float distanceFromLight = sqrt((mainLight.pos().x - i) * (mainLight.pos().x - i) + (mainLight.pos().y - j) * (mainLight.pos().y - j));
+					if (distanceFromLight > mainLight.size()) {
+						// The pixel is too far from the light source
+						glColor3f(ambientIntensity, ambientIntensity, ambientIntensity);
+					} else {
+						// float intensity = lerp(ambientIntensity, 1., 1. - (distance / lightSize));
+						float intensity = easeIn(1.f - (distanceFromLight / mainLight.size()), ambientIntensity, 1.f, 1.f);
+						glColor3f(intensity, intensity, intensity);
+					}
 
 					float distanceFromCircle = sqrt((circlePos.x - i) * (circlePos.x - i) + (circlePos.y - j) * (circlePos.y - j));
 					if (distanceFromCircle < circleRadius && distanceFromCircle > circleRadius - 2.f) {
@@ -339,6 +360,8 @@ int main() {
 			drawPoint(pt2);
 			drawPoint(pt3);
 			drawPoint(intersection);
+			drawPoint(intersection2);
+			drawPoint(intersection3);
 
 			// BLUE
 			glColor3f(0.f, 0.f, 1.f);
@@ -351,8 +374,7 @@ int main() {
 			// Point on light
 			glColor3f(1.f, 1.f, 0.f);
 			drawPoint(pt4);
-			drawPoint(pt1*pt2);
-			glVertex2f(pp2[E01], pp2[E02]);
+			drawPoint(pp2_1);
 			glVertex2f(pp4[E01], pp4[E02]);
 			glVertex2f(pp1[E01], pp1[E02]);
 
@@ -365,14 +387,23 @@ int main() {
 			drawPoint(circum3);
 			drawPoint(c);
 			drawPoint(d);
-			glVertex2f((!pp2)[E01], (!pp2)[E02]);
 			glVertex2f((!pp4)[E01], (!pp4)[E02]);
+
+			if ((pp4*pp4) >= 0) {
+				glColor3f(1.f, 0.f, 0.f);
+			} else {
+				glColor3f(1.f, 1.f, 1.f);
+			}
+			drawPoint(pp4_center);
+
 		glEnd();
 
 		glColor3f(0.f, 0.f, 1.f);
 		drawLine(a, b);
 		glColor3f(0.f, 1.f, 0.f);
 		drawLine(c, d);
+		glColor3f(1.f, 1.f, 0.f);
+		drawLine(pt1, pt2);
 
 		DrawCircle(circum, circleRadius);
 		DrawCircle(circum2, circle2Radius);
