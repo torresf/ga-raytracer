@@ -80,12 +80,12 @@ Mvec<T> normalize(const Mvec<T> &mv) {
 
 template<typename T>
 Mvec<T> projectPointOnLine(const Mvec<T> &p, const Mvec<T> &l) {
-	return normalize(p<l);
+	return normalize(p < l);
 }
 
 template<typename T>
 Mvec<T> projectPointOnCircle(const Mvec<T> &p, const Mvec<T> &c) {
-	return normalize(p ^ ei<T>() < c);
+	return normalize(p < c);
 }
 
 template<typename T>
@@ -102,7 +102,7 @@ void drawLine(const Mvec<T> &p1, const Mvec<T> &p2) {
 }
 
 template<typename T>
-void DrawCircle(const Mvec<T> &center, float r, int num_segments = 256) {
+void drawCircle(const Mvec<T> &center, float r, int num_segments = 256) {
 	float cx = center[E1];
 	float cy = center[E2];
 	float theta = 2 * 3.1415926 / float(num_segments);
@@ -141,18 +141,17 @@ float distance(const Mvec<T> &p1, const Mvec<T> &p2) {
 
 template<typename T>
 Mvec<T> regressive(const Mvec<T> &mv1, const Mvec<T> &mv2) {
-	return !((!mv1) ^ (!mv2));
+	return !((!mv1) ^ (!mv2)); // Intersection
 }
 
 template<typename T>
 Mvec<T> position(const Mvec<T> &pp) {
-	pp = pp/(pp^ei<double>());
-	return pp / (pp < -ei<double>());
+	return normalize(pp / (pp < -ei<double>()));
 }
 
 template<typename T>
 Mvec<T> radius(const Mvec<T> &pp) {
-	return pow(abs(((pp<pp).s/((pow(pp^ei<double>()), 2)).s)), .5);
+	return pow(abs(((pp<pp)/((pow(pp^ei<double>(), 2.))))), .5);
 }
 
 template<typename T>
@@ -162,7 +161,7 @@ Mvec<T> attitude(const Mvec<T> &pp) {
 
 template<typename T>
 Mvec<T> split(const Mvec<T> &pp) {
-	return position(pp) - radius(pp) * attitude(pp);
+	return - (position(pp) - radius(pp) * attitude(pp));
 }
 
 
@@ -237,6 +236,8 @@ int main() {
 	Mvec<double> pt5 = projectPointOnCircle(pt4, circle1);
 	std::cout << "pt4 : " << pt4 << std::endl;
 	std::cout << "pt5 : " << pt5 << std::endl;
+	std::cout << "pt4.grade() : " << pt4.grade() << std::endl;
+	std::cout << "pt5.grade() : " << pt5.grade() << std::endl;
 
 	Mvec<double> a = point(-120, -150);
 	Mvec<double> b = point(-120, -50);
@@ -264,20 +265,17 @@ int main() {
 
 	Mvec<double> pp1 = circle1 / circle2;
 	std::cout << "pp1 : " << pp1 << std::endl;
-	std::cout << "pp1.grade() : " << pp1.grade() << std::endl;
 
 	Mvec<double> pp2 = pt1 ^ pt2;
 	std::cout << "pp2 : " << pp2 << std::endl;
-	std::cout << "pp2.grade() : " << pp2.grade() << std::endl;
-	Mvec<double> pp2_1;
+	Mvec<double> pp2_1; // First point of pp2 pair point
+	Mvec<double> pp2_2; // Second point of pp2 pair point
 
 	Mvec<double> pp3 = regressive(circle1, circle2);
 	std::cout << "pp3 : " << pp3 << std::endl;
-	std::cout << "pp3.grade() : " << pp3.grade() << std::endl;
 
 	Mvec<double> pp4 = regressive(circle1, circle2);
 	std::cout << "pp4 : " << pp4 << std::endl;
-	std::cout << "pp4.grade() : " << pp4.grade() << std::endl;
 	Mvec<double> pp4_center = pp4 / (- pp4 | ei<double>());
 	pp4_center = -pp4_center;
 	Mvec<double> pp4_line;
@@ -285,9 +283,8 @@ int main() {
 	Mvec<double> intersection4 = e0<double>() | regressive(l1, pp4_line);
 	intersection4 /= - intersection4 | ei<double>();
 
-	Mvec<double> pt1_on_l1 = projectPointOnLine(pt1, l1);
-	std::cout << "pt1_on_l1 : " << pt1_on_l1 << std::endl;
-	std::cout << "pt1_on_l1.grade() : " << pt1_on_l1.grade() << std::endl;
+	Mvec<double> pt1_on_l1;
+	Mvec<double> pt1_on_l2;
 
 	// Application loop:
 	bool done = false;
@@ -324,7 +321,7 @@ int main() {
 				case SDL_MOUSEMOTION:
 					if (windowManager.isMouseButtonPressed(SDL_BUTTON_LEFT)) {
 						mainLight.pos() += glm::vec2(e.motion.xrel, -e.motion.yrel);
-						pt1 = pt4 = point(mainLight.pos().x, mainLight.pos().y);
+						pt1 = point(mainLight.pos().x, mainLight.pos().y);
 						break;
 					}
 				default:
@@ -341,11 +338,11 @@ int main() {
 
 		// Set point size (1 = 1px)
 		glPointSize(5.f);
+		drawLandmark();
 
 		circle1 = pt1 ^ pt2 ^ pt3;
 		centroid = (pt1 + pt2 + pt3) / 3;
 		circum = -circle1 / (ei<double>() < circle1);
-		pt5 = projectPointOnCircle(pt4, circle1);
 		circlePos.x = circum[E1];
 		circlePos.y = circum[E2];
 		circleRadius = distance(circum, pt1);
@@ -377,8 +374,11 @@ int main() {
 		// std::cout << "intersection4.grade() : " << intersection4.grade() << std::endl;
 
 		pt1_on_l1 = projectPointOnLine(pt1, l1);
-		std::cout << "pt1_on_l1 : " << pt1_on_l1 << std::endl;
-		std::cout << "pt1_on_l1.grade() : " << pt1_on_l1.grade() << std::endl;
+		pt1_on_l2 = projectPointOnLine(pt1, l2);
+
+		pt5 = projectPointOnCircle(pt1, circle2);
+		std::cout << "pt5 : " << pt5 << std::endl;
+		std::cout << "pt5.grade() : " << pt5.grade() << std::endl;
 
 		// Compute canvas
 		glBegin(GL_POINTS);
@@ -415,9 +415,9 @@ int main() {
 			drawPoint(pt2);
 			drawPoint(pt3);
 			drawPoint(intersection);
-			drawPoint(intersection2);
-			drawPoint(intersection3);
 			drawPoint(intersection4);
+			drawPoint(pt1_on_l1);
+			drawPoint(pt1_on_l2);
 
 			// BLUE
 			glColor3f(0.f, 0.f, 1.f);
@@ -429,16 +429,16 @@ int main() {
 			// YELLOW
 			// Point on light
 			glColor3f(1.f, 1.f, 0.f);
-			drawPoint(pt4);
-			drawPoint(pp2_1);
-			drawPoint(pt1_on_l1);
+			// drawPoint(pp2_1);
+			// drawPoint(pp2_2);
 			glVertex2f(pp4[E01], pp4[E02]);
 			glVertex2f(pp1[E01], pp1[E02]);
+			drawPoint(intersection2);
+			drawPoint(intersection3);
 
 			// GREEN
 			glColor3f(0.f, 1.f, 0.f);
 			// Light center projected on circle
-			// drawPoint(pt5);
 			drawPoint(circum);
 			drawPoint(circum2);
 			drawPoint(circum3);
@@ -453,23 +453,25 @@ int main() {
 			}
 			drawPoint(pp4_center);
 
+			glColor3f(1.f, 0.f, 1.f);
+			drawPoint(pt5);
+
 		glEnd();
 
 		glColor3f(0.f, 0.f, 1.f);
 		drawLine(a, b);
 		glColor3f(0.f, 1.f, 0.f);
 		drawLine(c, d);
+		drawCircle(circum2, circle2Radius);
 		glColor3f(1.f, 1.f, 0.f);
 		drawLine(pt1, pt2);
 		drawLine(pt2, pt3);
 		drawLine(pt1, pt3);
 		drawLine(pp4_center, intersection4);
 
-		DrawCircle(circum, circleRadius);
-		DrawCircle(circum2, circle2Radius);
-		DrawCircle(circum3, circle3Radius);
+		drawCircle(circum, circleRadius);
+		drawCircle(circum3, circle3Radius);
 
-		drawLandmark();
 
 		// Update the display
 		windowManager.swapBuffers();
