@@ -74,8 +74,18 @@ Mvec<T> circle(const T &x, const T &y, const T &r) {
 }
 
 template<typename T>
+Mvec<T> normalize(const Mvec<T> &mv) {
+	return mv / (mv | ei<double>());
+}
+
+template<typename T>
+Mvec<T> projectPointOnLine(const Mvec<T> &p, const Mvec<T> &l) {
+	return normalize(p<l);
+}
+
+template<typename T>
 Mvec<T> projectPointOnCircle(const Mvec<T> &p, const Mvec<T> &c) {
-	return (p ^ ei<T>()) < (c * c);
+	return normalize(p ^ ei<T>() < c);
 }
 
 template<typename T>
@@ -92,7 +102,7 @@ void drawLine(const Mvec<T> &p1, const Mvec<T> &p2) {
 }
 
 template<typename T>
-void DrawCircle(const Mvec<T> &center, float r, int num_segments = 64) {
+void DrawCircle(const Mvec<T> &center, float r, int num_segments = 256) {
 	float cx = center[E1];
 	float cy = center[E2];
 	float theta = 2 * 3.1415926 / float(num_segments);
@@ -134,6 +144,28 @@ Mvec<T> regressive(const Mvec<T> &mv1, const Mvec<T> &mv2) {
 	return !((!mv1) ^ (!mv2));
 }
 
+template<typename T>
+Mvec<T> position(const Mvec<T> &pp) {
+	pp = pp/(pp^ei<double>());
+	return pp / (pp < -ei<double>());
+}
+
+template<typename T>
+Mvec<T> radius(const Mvec<T> &pp) {
+	return pow(abs(((pp<pp).s/((pow(pp^ei<double>()), 2)).s)), .5);
+}
+
+template<typename T>
+Mvec<T> attitude(const Mvec<T> &pp) {
+	return (ei<double>()^e0<double>() < normalize(pp^ei<double>()));
+}
+
+template<typename T>
+Mvec<T> split(const Mvec<T> &pp) {
+	return position(pp) - radius(pp) * attitude(pp);
+}
+
+
 int main() {
 	std::cout << "Lancement du programme..." << std::endl;
 
@@ -168,8 +200,8 @@ int main() {
 	glm::vec2 circlePos(-50.f, 80.f);
 	float circleRadius = 40.f;
 	glm::vec2 circle2Pos(0.f, 0.f);
-	float circle2Radius = 40.f;
-	float circle3Radius = 40.f;
+	float circle2Radius = 80.f;
+	float circle3Radius = 60.f;
 
 	Mvec<double> pt1 = point(90.0, 30.0);
 	Mvec<double> pt2 = point(30.0, 50.0);
@@ -177,8 +209,8 @@ int main() {
 
 	Mvec<double> l0 = pt1 ^ pt2 ^ ei<double>();
 	Mvec<double> circle1 = pt1 ^ pt2 ^ pt3;
-	Mvec<double> circle2 = circle(-100, 50, 80);
-	Mvec<double> circle3 = circle(-120, 50, 80);
+	Mvec<double> circle2 = circle(-140, 150, 80);
+	Mvec<double> circle3 = circle(-170, 180, 60);
 	Mvec<double> centroid = (pt1 + pt2 + pt3) / 3;
 	Mvec<double> circum = -circle1 / (ei<double>() < circle1);
 	Mvec<double> circum2 = -circle2 / (ei<double>() < circle2);
@@ -192,6 +224,7 @@ int main() {
 	std::cout << "l0.grade() : " << l0.grade() << std::endl;
 	std::cout << "circle1 : " << circle1 << std::endl;
 	std::cout << "circle2 : " << circle2 << std::endl;
+	std::cout << "circle3 : " << circle3 << std::endl;
 	std::cout << "centroid : " << centroid << std::endl;
 	std::cout << "circum : " << circum << std::endl;
 	std::cout << "circum2 : " << circum2 << std::endl;
@@ -242,12 +275,19 @@ int main() {
 	std::cout << "pp3 : " << pp3 << std::endl;
 	std::cout << "pp3.grade() : " << pp3.grade() << std::endl;
 
-	Mvec<double> pp4 = regressive(circle1, l2);
+	Mvec<double> pp4 = regressive(circle1, circle2);
 	std::cout << "pp4 : " << pp4 << std::endl;
 	std::cout << "pp4.grade() : " << pp4.grade() << std::endl;
 	Mvec<double> pp4_center = pp4 / (- pp4 | ei<double>());
 	pp4_center = -pp4_center;
+	Mvec<double> pp4_line;
 
+	Mvec<double> intersection4 = e0<double>() | regressive(l1, pp4_line);
+	intersection4 /= - intersection4 | ei<double>();
+
+	Mvec<double> pt1_on_l1 = projectPointOnLine(pt1, l1);
+	std::cout << "pt1_on_l1 : " << pt1_on_l1 << std::endl;
+	std::cout << "pt1_on_l1.grade() : " << pt1_on_l1.grade() << std::endl;
 
 	// Application loop:
 	bool done = false;
@@ -315,15 +355,30 @@ int main() {
 		pp2 = pt1 ^ pt2;
 		pp2_1 = pp2 / (- pp2 | ei<double>());
 		pp2_1 = -pp2_1;
-		pp4 = regressive(circle1, l2);
+		pp4 = regressive(circle1, circle2);
+		pp4_line = pp4 ^ ei<double>();
 		pp4_center = pp4 / (- pp4 | ei<double>());
 		pp4_center = -pp4_center;
+		// std::cout << "pp4 : " << pp4 << std::endl;
+		// std::cout << "pp4_line : " << pp4_line << std::endl;
+		// std::cout << "pp4_line.grade() : " << pp4_line.grade() << std::endl;
+		// std::cout << "pp4 dual : " << !pp4 << std::endl;
+		// std::cout << "pp4_center : " << pp4_center << std::endl;
+		// std::cout << "pp4_center dual: " << !pp4_center << std::endl;
 
 		l0 = pt1 ^ pt2 ^ ei<double>();
 		intersection2 = e0<double>() | regressive(l1, l0);
 		intersection2 /= - intersection2 | ei<double>();
 		intersection3 = e0<double>() | regressive(l2, l0);
 		intersection3 /= - intersection3 | ei<double>();
+		intersection4 =  e0<double>() | regressive(pp4_line, circle1);
+		intersection4 /= - intersection4 | ei<double>();
+		// std::cout << "intersection4 : " << intersection4 << std::endl;
+		// std::cout << "intersection4.grade() : " << intersection4.grade() << std::endl;
+
+		pt1_on_l1 = projectPointOnLine(pt1, l1);
+		std::cout << "pt1_on_l1 : " << pt1_on_l1 << std::endl;
+		std::cout << "pt1_on_l1.grade() : " << pt1_on_l1.grade() << std::endl;
 
 		// Compute canvas
 		glBegin(GL_POINTS);
@@ -362,6 +417,7 @@ int main() {
 			drawPoint(intersection);
 			drawPoint(intersection2);
 			drawPoint(intersection3);
+			drawPoint(intersection4);
 
 			// BLUE
 			glColor3f(0.f, 0.f, 1.f);
@@ -375,6 +431,7 @@ int main() {
 			glColor3f(1.f, 1.f, 0.f);
 			drawPoint(pt4);
 			drawPoint(pp2_1);
+			drawPoint(pt1_on_l1);
 			glVertex2f(pp4[E01], pp4[E02]);
 			glVertex2f(pp1[E01], pp1[E02]);
 
@@ -404,6 +461,9 @@ int main() {
 		drawLine(c, d);
 		glColor3f(1.f, 1.f, 0.f);
 		drawLine(pt1, pt2);
+		drawLine(pt2, pt3);
+		drawLine(pt1, pt3);
+		drawLine(pp4_center, intersection4);
 
 		DrawCircle(circum, circleRadius);
 		DrawCircle(circum2, circle2Radius);
