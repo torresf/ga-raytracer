@@ -11,5 +11,6 @@ The inner product of two normalized points gives the square of the Euclidean dis
 - [x] Intersect lines
 - [x] Intersect circles
 - [x] Project point on line
+- [x] Display the two points from a point pair
 - [ ] Project point on circle
-- [ ] Display the two points from a point pair
+- [ ] Get position of point on a line

@@ -1,4 +1,6 @@
 #pragma once
+#ifndef __LIGHT__HPP
+#define __LIGHT__HPP
 
 #include <glimac/glm.hpp>
 
@@ -26,3 +28,5 @@ class Light {
 };
 
 }
+
+#endif
