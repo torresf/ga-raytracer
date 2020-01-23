@@ -1,4 +1,4 @@
-# Install script for directory: /home/torresf/Documents/GAR/lib/garamon_c2ga/doc
+# Install script for directory: /mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/doc
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

@@ -6,5 +6,5 @@ CXX_FLAGS =  -Wall -O2 -std=c++14 -Wno-return-local-addr -O3 -DNDEBUG -fPIC
 
 CXX_DEFINES = -Dc2ga_EXPORTS
 
-CXX_INCLUDES = -I/home/torresf/Documents/GAR/lib/garamon_c2ga/src -I/usr/include/eigen3 
+CXX_INCLUDES = -I"/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/lib/garamon_c2ga/src" -I/usr/include/eigen3 
 
