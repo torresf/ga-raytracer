@@ -56,6 +56,11 @@ bool areIntersected(const Mvec<T> &mv1, const Mvec<T> &mv2) {
 }
 
 template<typename T>
+bool isPointInCircle(const Mvec<T> &p, const Mvec<T> &c) {
+	return areIntersected(p, c);
+}
+
+template<typename T>
 Mvec<T> projectPointOnLine(const Mvec<T> &p, const Mvec<T> &l) {
 	return -normalize(p < l);
 }

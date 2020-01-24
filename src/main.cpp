@@ -101,7 +101,6 @@ int main() {
 	Mvec<double> l1 = line(a, b);
 	Mvec<double> l2 = line(c, d);
 
-
 	Mvec<double> intersection1 = e0<double>() | getIntersection(l1, l2);
 	intersection1 = normalize(intersection1);
 
@@ -219,7 +218,7 @@ int main() {
 
 		// Compute canvas
 		glBegin(GL_POINTS);
-#if 1
+#if 0
 			for (int i = -WIDTH/2 + padding; i < WIDTH/2 - padding; i++) {
 				for (int j = -HEIGHT/2 + padding; j < HEIGHT/2 - padding; j++) {
 
@@ -264,7 +263,7 @@ int main() {
 #endif
 			// RED
 			glColor3f(1.f, 0.f, 0.f);
-			// drawPoint(pt1);
+			drawPoint(pt1);
 			// drawPoint(pt2);
 			// drawPoint(pt3);
 			drawPoint(intersection1);
@@ -285,7 +284,7 @@ int main() {
 			// GREEN
 			glColor3f(0.f, 1.f, 0.f);
 			// Light center projected on circle
-			drawPoint(circum);
+			// drawPoint(circum);
 			drawPoint(circum2);
 			drawPoint(circum3);
 			drawPoint(c);
@@ -312,7 +311,7 @@ int main() {
 		drawLine(pp4);
 
 		glColor3f(1.f, 1.f, 0.f);
-		drawCircle(circum, circleRadius);
+		// drawCircle(circum, circleRadius);
 		drawCircle(circum3, circle3Radius);
 
 		// Update the display
@@ -323,7 +322,7 @@ int main() {
 		std::chrono::duration<double> elapsed_seconds = end-start;
 		std::time_t end_time = std::chrono::system_clock::to_time_t(end);
 		// std::cout << "elapsed time: " << elapsed_seconds.count() << "s" << std::endl;
-		std::cout << 1.0 / elapsed_seconds.count() << " FPS" << std::endl;
+		// std::cout << 1.0 / elapsed_seconds.count() << " FPS" << std::endl;
 	}
 
 	std::cout << "Fin du programme." << std::endl;
