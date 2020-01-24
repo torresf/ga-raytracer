@@ -6,6 +6,8 @@
 #include <iostream>
 #include <vector>
 #include <math.h>
+#include <chrono>
+#include <ctime>
 
 // glimac
 #include <glimac/SDLWindowManager.hpp>
@@ -59,8 +61,8 @@ int main() {
 	glm::vec2 circlePos(-50.f, 80.f);
 	float circleRadius = 40.f;
 	glm::vec2 circle2Pos(0.f, 0.f);
-	float circle2Radius = 80.f;
-	float circle3Radius = 60.f;
+	float circle2Radius = 60.f;
+	float circle3Radius = 40.f;
 
 	Mvec<double> pt1 = point(90.0, 30.0);
 	Mvec<double> pt2 = point(30.0, 50.0);
@@ -68,8 +70,8 @@ int main() {
 
 	Mvec<double> l0 = pt1 ^ pt2 ^ ei<double>();
 	Mvec<double> circle1 = pt1 ^ pt2 ^ pt3;
-	Mvec<double> circle2 = circle(-140, 150, 80);
-	Mvec<double> circle3 = circle(-170, 180, 60);
+	Mvec<double> circle2 = circle(-80, 50, 60);
+	Mvec<double> circle3 = circle(-70, 120, 40);
 	Mvec<double> circum = getCenterOfCircle(circle1);
 	Mvec<double> circum2 = getCenterOfCircle(circle2);
 	Mvec<double> circum3 = getCenterOfCircle(circle3);
@@ -131,9 +133,14 @@ int main() {
 	obstacles.push_back(circle2);
 	obstacles.push_back(circle3);
 
+	auto lastTime = std::chrono::system_clock::now();
+	int nbFrames = 0;
+
 	// Application loop:
 	bool done = false;
 	while (!done) {
+
+		auto start = std::chrono::system_clock::now();
 
 		// Event loop:
 		SDL_Event e;
@@ -209,16 +216,16 @@ int main() {
 		pt1_on_l2 = projectPointOnLine(pt1, l2);
 
 		pt5 = projectPointOnCircle(pt1, circle2);
+
 		// Compute canvas
 		glBegin(GL_POINTS);
-#if 0
+#if 1
 			for (int i = -WIDTH/2 + padding; i < WIDTH/2 - padding; i++) {
 				for (int j = -HEIGHT/2 + padding; j < HEIGHT/2 - padding; j++) {
 
 					float distanceFromLight = sqrt((mainLight.pos().x - i) * (mainLight.pos().x - i) + (mainLight.pos().y - j) * (mainLight.pos().y - j));
 					if (distanceFromLight > mainLight.size()) {
 						// The pixel is too far from the light source
-
 						glColor3f(ambientIntensity, ambientIntensity, ambientIntensity);
 					} else {
 						// float intensity = lerp(ambientIntensity, 1., 1. - (distance / lightSize));
@@ -226,7 +233,10 @@ int main() {
 						for (auto &obstacle : obstacles) {
 							// If intersect between point(i,j) and obstacle, black, else compute intensity
 							if (areIntersected(line(point((double)i, (double)j), pt1), obstacle)) {
-								isIntersected = true;
+								if (distance(projectPointOnCircle(point((double)i, (double)j), obstacle), pt1) <= distance(point((double)i, (double)j), pt1)) {
+									isIntersected = true;
+									break;
+								}
 							}
 						}
 						float intensity;
@@ -248,15 +258,15 @@ int main() {
 					// 	glColor3f(ambientIntensity, 1., ambientIntensity);
 					// }
 
-					// glVertex2f(i, j);
+					glVertex2f(i, j);
 				}
 			}
 #endif
 			// RED
 			glColor3f(1.f, 0.f, 0.f);
-			drawPoint(pt1);
-			drawPoint(pt2);
-			drawPoint(pt3);
+			// drawPoint(pt1);
+			// drawPoint(pt2);
+			// drawPoint(pt3);
 			drawPoint(intersection1);
 			drawPoint(pt1_on_l1);
 			drawPoint(pt1_on_l2);
@@ -269,10 +279,6 @@ int main() {
 			// YELLOW
 			// Point on light
 			glColor3f(1.f, 1.f, 0.f);
-			// drawPoint(pp2_1);
-			// drawPoint(pp2_2);
-			glVertex2f(pp4[E01], pp4[E02]);
-			glVertex2f(pp1[E01], pp1[E02]);
 			drawPoint(intersection2);
 			drawPoint(intersection3);
 
@@ -303,20 +309,21 @@ int main() {
 		glColor3f(0.f, 1.f, 0.f);
 		drawLine(c, d);
 		drawCircle(circum2, circle2Radius);
-		glColor3f(1.f, 1.f, 0.f);
-		drawLine(pt1, pt2);
-		drawLine(pt2, pt3);
-		drawLine(pt1, pt3);
 		drawLine(pp4);
-
 
 		glColor3f(1.f, 1.f, 0.f);
 		drawCircle(circum, circleRadius);
 		drawCircle(circum3, circle3Radius);
 
-
 		// Update the display
 		windowManager.swapBuffers();
+
+		// FPS count
+		auto end = std::chrono::system_clock::now();
+		std::chrono::duration<double> elapsed_seconds = end-start;
+		std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+		// std::cout << "elapsed time: " << elapsed_seconds.count() << "s" << std::endl;
+		std::cout << 1.0 / elapsed_seconds.count() << " FPS" << std::endl;
 	}
 
 	std::cout << "Fin du programme." << std::endl;

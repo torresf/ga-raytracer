@@ -61,8 +61,18 @@ Mvec<T> projectPointOnLine(const Mvec<T> &p, const Mvec<T> &l) {
 }
 
 template<typename T>
+Mvec<T> getCenterOfCircle(const Mvec<T> &circle) {
+	return -circle / (ei<T>() < circle);
+}
+
+template<typename T>
+Mvec<T> getFirstPointFromPointPair(const Mvec<T> &pp) {
+	return (pp + sqrt(pp*pp)) / (-ei<T>() | pp);
+}
+
+template<typename T>
 Mvec<T> projectPointOnCircle(const Mvec<T> &p, const Mvec<T> &c) {
-	return -normalize(p < c);
+	return getFirstPointFromPointPair(getIntersection(c, line(p, getCenterOfCircle(c))));
 }
 
 template<typename T>
@@ -70,10 +80,7 @@ float distance(const Mvec<T> &p1, const Mvec<T> &p2) {
 	return (p2 - p1).norm();
 }
 
-template<typename T>
-Mvec<T> getCenterOfCircle(const Mvec<T> &circle) {
-	return -circle / (ei<T>() < circle); // Intersection
-}
+
 
 template<typename T>
 std::string whoAmI(c2ga::Mvec<T> mv) {

@@ -31,8 +31,8 @@ template<typename T>
 void drawPointPair(const Mvec<T> &pp) {
 	if (pp.norm()*pp.norm() > 0) {
 		// 2 points
-		Mvec<T> p1 = (pp + sqrt(pp*pp)) / (-ei<double>() | pp);
-		Mvec<T> p2 = (pp - sqrt(pp*pp)) / (-ei<double>() | pp);
+		Mvec<T> p1 = (pp + sqrt(pp*pp)) / (-ei<T>() | pp);
+		Mvec<T> p2 = (pp - sqrt(pp*pp)) / (-ei<T>() | pp);
 		drawPoint(p1);
 		drawPoint(p2);
 	}
