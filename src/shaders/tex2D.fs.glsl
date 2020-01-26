@@ -1,6 +1,4 @@
-#version 300 es
-
-precision mediump float;
+#version 330 core
 
 in vec2 vFragTexture;
 uniform vec3 uColor;
@@ -11,5 +9,5 @@ out vec3 fFragColor;
 void main() {
 	// fFragColor = vec3(vFragTexture, 1);
 	// fFragColor = uColor;
-	fFragColor = (texture(uTexture, vFragTexture)).xyz;
+	fFragColor = (texture(uTexture, vFragTexture)).xyz; // * (.5*uColor) + vec3(.1,.1,.1);
 };

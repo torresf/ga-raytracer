@@ -65,13 +65,13 @@ int main(int argc, char** argv) {
 
 	// Initialize SDL and open a window
 	glimac::SDLWindowManager windowManager(WIDTH, HEIGHT, "GA Raytracer");
-	glViewport(0, 0, WIDTH, HEIGHT);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluOrtho2D(-WIDTH / 2.f, WIDTH / 2.f, -HEIGHT / 2.f, HEIGHT / 2.f);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_LINE_SMOOTH);
+	// glViewport(0, 0, WIDTH, HEIGHT);
+	// glMatrixMode(GL_PROJECTION);
+	// glLoadIdentity();
+	// gluOrtho2D(-WIDTH / 2.f, WIDTH / 2.f, -HEIGHT / 2.f, HEIGHT / 2.f);
+	// glEnable(GL_BLEND);
+	// glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	// glEnable(GL_LINE_SMOOTH);
 
 	// Initialize glew for OpenGL3+ support
 	GLenum glewInitError = glewInit();
@@ -97,10 +97,18 @@ int main(int argc, char** argv) {
 	glm::vec3 color = glm::vec3(0.f);
 
 	// Textures
-	std::unique_ptr<Image> image = loadImage("/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/assets/triforce.png");
+	std::unique_ptr<Image> image = loadImage("/home/torresf/Documents/ga-raytracer/assets/triforce.png");
 
 	if (image == NULL)
 		std::cerr << "Erreur au chargement de l'image" << std::endl;
+
+	std::vector<glm::vec4> pixels(WIDTH * HEIGHT);
+
+	for (int i = 0; i < WIDTH; i++) {
+		for (int j = 0; j < HEIGHT; j++) {
+			pixels[(i * WIDTH) + j] = glm::vec4((double) i / WIDTH, 0., (double) j / HEIGHT, 1.); // RGBA
+		}
+	}
 
 	GLuint texture;
 	glGenTextures(1, &texture);
@@ -109,15 +117,15 @@ int main(int argc, char** argv) {
 	glTexImage2D(GL_TEXTURE_2D,
 		0,
 		GL_RGBA,
-		image->getWidth(),
-		image->getHeight(),
+		WIDTH,
+		WIDTH,
 		0,
 		GL_RGBA,
 		GL_FLOAT,
-		image->getPixels());
+		pixels.data());
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -130,11 +138,12 @@ int main(int argc, char** argv) {
 
 	// Envoie des données de vertex
 	Vertex2DUV vertices[] = {
-		Vertex2DUV(glm::vec2(-1, -1), glm::vec2(0.5, 0)),
-		Vertex2DUV(glm::vec2( 1, -1), glm::vec2(0, 1)),
-		Vertex2DUV(glm::vec2( 0,  1), glm::vec2(1, 1))
+		Vertex2DUV(glm::vec2(-1, -1), glm::vec2(0, 1)),
+		Vertex2DUV(glm::vec2( 1, -1), glm::vec2(1, 1)),
+		Vertex2DUV(glm::vec2( 1,  1), glm::vec2(1, 0)),
+		Vertex2DUV(glm::vec2( -1,  1), glm::vec2(0, 0))
 	};
-	glBufferData(GL_ARRAY_BUFFER, 3 * sizeof(Vertex2DUV), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, 4 * sizeof(Vertex2DUV), vertices, GL_STATIC_DRAW);
 
 	// Débinding du VBO
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -297,52 +306,117 @@ int main(int argc, char** argv) {
 		 * HERE SHOULD COME THE RENDERING CODE
 		 *********************************/
 
+		// Update pixels colors
+		float intensity;
+		bool isIntersected;
+		#pragma omp parallel for
+		for (int i = 0; i < WIDTH; i++) {
+			#pragma omp parallel for
+			for (int j = 0; j < HEIGHT; j++) {
+				auto currentPixel = point((double) j - WIDTH*.5, - (double) i + HEIGHT*.5);
+
+				// float distanceFromLight = sqrt((mainLight.pos().x - i) * (mainLight.pos().x - i) + (mainLight.pos().y - j) * (mainLight.pos().y - j));
+				float distanceFromLight = distance(point(mainLight.pos()), currentPixel);
+				if (distanceFromLight > mainLight.size()) {
+					// The pixel is too far from the light source
+					intensity = ambientIntensity;
+				} else {
+					// float intensity = lerp(ambientIntensity, 1., 1. - (distance / lightSize));
+					isIntersected = false;
+					for (auto &obstacle : obstacles) {
+
+						if (isPointInCircle(currentPixel, obstacle)) {
+							isIntersected = true;
+							break;
+						}
+
+						if (areIntersected(line(currentPixel, pt1), obstacle)) {
+							if (distance(projectPointOnCircle(currentPixel, obstacle), pt1) <= distance(currentPixel, pt1)) {
+								isIntersected = true;
+								break;
+							}
+						}
+					}
+					if (isIntersected) {
+						intensity = ambientIntensity;
+					} else {
+						intensity = easeIn(1.f - (distanceFromLight / mainLight.size()), ambientIntensity, 1.f, 1.f);
+					}
+					// glColor3f(intensity, intensity, intensity);
+				}
+
+				// pixels[(i * WIDTH) + j] = glm::vec4((double) i / WIDTH * cos(time/5), 0., sin(time/10), 1.); // RGBA
+				pixels[(i * WIDTH) + j] = glm::vec4(intensity, intensity, intensity, 1.); // RGBA
+			}
+		}
+
+		// Update texture
 		glBindTexture(GL_TEXTURE_2D, texture);
+
+		glTexImage2D(GL_TEXTURE_2D,
+			0,
+			GL_RGBA,
+			WIDTH,
+			WIDTH,
+			0,
+			GL_RGBA,
+			GL_FLOAT,
+			pixels.data());
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
 		glUniform1i(textureLocation, 0);
 
 		// Clear canvas
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		// Draw Quad
 		glBindVertexArray(vao);
 
-		transformMatrix = rotate(time*.5) * translate(0.5, 0.5) * scale(0.25, 0.25) * rotate(-time);
-		color = glm::vec3(1.f, 0.f, 0.f);
-		glUniformMatrix3fv(matrixLocation, 1, GL_FALSE, glm::value_ptr(glm::mat4()));
+		// transformMatrix = rotate(time*.5) * translate(0.5, 0.5) * scale(0.25, 0.25) * rotate(-time);
+		transformMatrix = glm::mat3();
+		color = glm::vec3(cos(time/20), 0.1f, sin(time/10));
+		glUniformMatrix3fv(matrixLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));
 		glUniform3fv(colorLocation, 1, glm::value_ptr(color));
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawArrays(GL_QUADS, 0, 4);
+
+		glBindVertexArray(0);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		time += 0.01;
 
 		// Set point size (1 = 1px)
-		glPointSize(5.f);
-		drawLandmark(WIDTH, HEIGHT);
+		// glPointSize(5.f);
+		// drawLandmark(WIDTH, HEIGHT);
 
-		circle1 = pt1 ^ pt2 ^ pt3;
-		circum = -circle1 / (ei<double>() < circle1);
-		circlePos.x = circum[E1];
-		circlePos.y = circum[E2];
-		circleRadius = distance(circum, pt1);
-		circle2Pos.x = circum2[E1];
-		circle2Pos.y = circum2[E2];
-		pp1 = circle1 | circle2;
-		pp2 = pt1 ^ pt2;
-		pp2_1 = pp2 / (- pp2 | ei<double>());
-		pp2_1 = -pp2_1;
-		pp4 = getIntersection(circle1, circle2);
-		pp4_line = pp4 ^ ei<double>();
-
-		l0 = pt1 ^ pt2 ^ ei<double>();
-		intersection2 = e0<double>() | getIntersection(l1, l0);
-		intersection2 = normalize(intersection2);
-		intersection3 = e0<double>() | getIntersection(l2, l0);
-		intersection3 = normalize(intersection3);
-
-		pt1_on_l1 = projectPointOnLine(pt1, l1);
-		pt1_on_l2 = projectPointOnLine(pt1, l2);
-
-		pt5 = projectPointOnCircle(pt1, circle2);
+		// circle1 = pt1 ^ pt2 ^ pt3;
+		// circum = -circle1 / (ei<double>() < circle1);
+		// circlePos.x = circum[E1];
+		// circlePos.y = circum[E2];
+		// circleRadius = distance(circum, pt1);
+		// circle2Pos.x = circum2[E1];
+		// circle2Pos.y = circum2[E2];
+		// pp1 = circle1 | circle2;
+		// pp2 = pt1 ^ pt2;
+		// pp2_1 = pp2 / (- pp2 | ei<double>());
+		// pp2_1 = -pp2_1;
+		// pp4 = getIntersection(circle1, circle2);
+		// pp4_line = pp4 ^ ei<double>();
+		//
+		// l0 = pt1 ^ pt2 ^ ei<double>();
+		// intersection2 = e0<double>() | getIntersection(l1, l0);
+		// intersection2 = normalize(intersection2);
+		// intersection3 = e0<double>() | getIntersection(l2, l0);
+		// intersection3 = normalize(intersection3);
+		//
+		// pt1_on_l1 = projectPointOnLine(pt1, l1);
+		// pt1_on_l2 = projectPointOnLine(pt1, l2);
+		//
+		// pt5 = projectPointOnCircle(pt1, circle2);
 
 		// Compute canvas
-		glBegin(GL_POINTS);
 #if 0
+		glBegin(GL_POINTS);
 #pragma omp parallel for
 			for (int i = -WIDTH/2 + padding; i < WIDTH/2 - padding; i++) {
 #pragma omp parallel for
@@ -396,7 +470,7 @@ int main(int argc, char** argv) {
 				}
 			}
 #endif
-#if 1
+#if 0
 			// RED
 			glColor3f(1.f, 0.f, 0.f);
 			// drawPoint(pt2);
@@ -444,7 +518,6 @@ int main(int argc, char** argv) {
 			glColor3f(1.f, 0.f, 1.f);
 			drawPoint(pt5);
 			drawPoint(l1 * pt1 / l1);
-#endif
 
 		glEnd(); // End draw GL_POINTS
 
@@ -459,6 +532,8 @@ int main(int argc, char** argv) {
 		// drawCircle(circum, circleRadius);
 		drawCircle(circum3, circle3Radius);
 
+#endif
+
 		// Update the display
 		windowManager.swapBuffers();
 
@@ -469,6 +544,10 @@ int main(int argc, char** argv) {
 		// std::cout << "elapsed time: " << elapsed_seconds.count() << "s" << std::endl;
 		std::cout << 1.0 / elapsed_seconds.count() << " FPS" << std::endl;
 	}
+
+	glDeleteBuffers(1, &vbo);
+	glDeleteVertexArrays(1, &vao);
+	glDeleteTextures(1, &texture);
 
 	std::cout << "Fin du programme." << std::endl;
 	return EXIT_SUCCESS;

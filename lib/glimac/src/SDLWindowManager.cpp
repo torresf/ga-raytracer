@@ -10,7 +10,7 @@ SDLWindowManager::SDLWindowManager(uint32_t width, uint32_t height, const char* 
 		return;
 	}
 
-	if (!SDL_SetVideoMode(width, height, 32, SDL_OPENGL /*| SDL_RESIZABLE*/ | SDL_GL_DOUBLEBUFFER)) {
+	if (!SDL_SetVideoMode(width, height, 32, SDL_OPENGL | SDL_RESIZABLE | SDL_GL_DOUBLEBUFFER)) {
 		std::cerr << SDL_GetError() << std::endl;
 		return;
 	}
