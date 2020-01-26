@@ -18,9 +18,8 @@ Mvec<T> point(const T &x, const T &y){
 	return mv;
 }
 
-template<typename T>
-Mvec<T> point(const glm::vec2 &vec){
-		return point(vec.x, vec.y);
+Mvec<double> point(glm::vec2 &vec){
+	return point((double) vec.x, (double) vec.y);
 }
 
 template<typename T>
@@ -57,7 +56,8 @@ bool areIntersected(const Mvec<T> &mv1, const Mvec<T> &mv2) {
 
 template<typename T>
 bool isPointInCircle(const Mvec<T> &p, const Mvec<T> &c) {
-	return areIntersected(p, c);
+	T distToCircle = (!p) | c;
+	return distToCircle > 0;
 }
 
 template<typename T>

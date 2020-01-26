@@ -1,17 +1,26 @@
 # ga-raytracer
+
 Geometric Algebra 2D Raytracer using c2ga and OpenGL
 
-### Notes
+## Notes
+
 The inner product of two normalized points gives the square of the Euclidean distance.
 
-### TODO
+## TODO
+
 - [x] Create point
+- [x] Create point pair
 - [x] Create line
 - [x] Create circle
 - [x] Intersect lines
 - [x] Intersect circles
 - [x] Project point on line
-- [x] Display the two points from a point pair
 - [x] Project point on circle
+- [x] Display the two points from a point pair
+- [x] IsPointInCircle
 - [ ] Get position of point on a line
-- [ ] IsPointInCircle
+
+## Optimisation
+
+- PBOs
+- glTexSubImage2D()

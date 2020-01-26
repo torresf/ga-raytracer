@@ -13,6 +13,7 @@
 #include <glimac/SDLWindowManager.hpp>
 #include <glimac/Program.hpp>
 #include <glimac/FilePath.hpp>
+#include <glimac/Image.hpp>
 #include <glimac/glm.hpp>
 
 // gar (Geaometric Algebra Raytracer)
@@ -23,11 +24,43 @@
 
 using namespace c2ga;
 using namespace gar;
+using namespace glimac;
 
 static const int WIDTH = 500;
 static const int HEIGHT = 500;
 
-int main() {
+class Vertex2DUV {
+	public:
+		Vertex2DUV();
+		Vertex2DUV(const glm::vec2 &pos, const glm::vec2 &tex);
+		glm::vec2 position;
+		glm::vec2 texture;
+};
+
+Vertex2DUV::Vertex2DUV() {
+	position = glm::vec2(0.f, 0.f);
+	texture = glm::vec2(0.f, 0.f);
+}
+
+Vertex2DUV::Vertex2DUV(const glm::vec2 &pos, const glm::vec2 &tex) {
+	position = pos;
+	texture = tex;
+}
+
+glm::mat3 translate(float tx, float ty) {
+	return glm::mat3(glm::vec3(1, 0, 0), glm::vec3(0, 1, 0), glm::vec3(tx, ty, 1));
+}
+
+glm::mat3 scale(float sx, float sy) {
+	return glm::mat3(glm::vec3(sx, 0, 0), glm::vec3(0, sy, 0), glm::vec3(0, 0, 1));
+}
+
+glm::mat3 rotate(float a) {
+	a = glm::radians(a);
+	return glm::mat3(glm::vec3(cos(a), sin(a), 0), glm::vec3(-sin(a), cos(a), 0), glm::vec3(0, 0, 1));
+}
+
+int main(int argc, char** argv) {
 	std::cout << "Lancement du programme..." << std::endl;
 
 	// Initialize SDL and open a window
@@ -49,6 +82,86 @@ int main() {
 
 	std::cout << "OpenGL Version : " << glGetString(GL_VERSION) << std::endl;
 	std::cout << "GLEW Version : " << glewGetString(GLEW_VERSION) << std::endl;
+
+	FilePath applicationPath(argv[0]);
+	Program program = loadProgram(applicationPath.dirPath() + "shaders/tex2D.vs.glsl",
+																applicationPath.dirPath() + "shaders/tex2D.fs.glsl");
+
+	program.use();
+	GLint matrixLocation = glGetUniformLocation(program.getGLId(), "uModelMatrix");
+	GLint colorLocation = glGetUniformLocation(program.getGLId(), "uColor");
+	GLint textureLocation = glGetUniformLocation(program.getGLId(), "uTexture");
+
+	float time = 0.f;
+	glm::mat3 transformMatrix = rotate(time);
+	glm::vec3 color = glm::vec3(0.f);
+
+	// Textures
+	std::unique_ptr<Image> image = loadImage("/mnt/d/Florian Torres/Documents/Projects/ga-raytracer/assets/triforce.png");
+
+	if (image == NULL)
+		std::cerr << "Erreur au chargement de l'image" << std::endl;
+
+	GLuint texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	glTexImage2D(GL_TEXTURE_2D,
+		0,
+		GL_RGBA,
+		image->getWidth(),
+		image->getHeight(),
+		0,
+		GL_RGBA,
+		GL_FLOAT,
+		image->getPixels());
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// Création du VBO
+	GLuint vbo;
+	glGenBuffers(1, &vbo);
+
+	// Binding du VBO
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+	// Envoie des données de vertex
+	Vertex2DUV vertices[] = {
+		Vertex2DUV(glm::vec2(-1, -1), glm::vec2(0.5, 0)),
+		Vertex2DUV(glm::vec2( 1, -1), glm::vec2(0, 1)),
+		Vertex2DUV(glm::vec2( 0,  1), glm::vec2(1, 1))
+	};
+	glBufferData(GL_ARRAY_BUFFER, 3 * sizeof(Vertex2DUV), vertices, GL_STATIC_DRAW);
+
+	// Débinding du VBO
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	// Débinding du VBO
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	// Création du VAO
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+
+	// Binding du VAO
+	glBindVertexArray(vao);
+	// Activation de l'attribut de sommet 0 (la position)
+	const GLuint VERTEX_ATTR_POSITION = 0;
+	const GLuint VERTEX_ATTR_TEXTURE = 1;
+	glEnableVertexAttribArray(VERTEX_ATTR_POSITION);
+	glEnableVertexAttribArray(VERTEX_ATTR_TEXTURE);
+
+	// Spécification de l'attribut de sommet et de texture
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glVertexAttribPointer(VERTEX_ATTR_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex2DUV), (const GLvoid*) offsetof(Vertex2DUV, position));
+	glVertexAttribPointer(VERTEX_ATTR_TEXTURE, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex2DUV), (const GLvoid*) offsetof(Vertex2DUV, texture));
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	// Débinding du VAO
+	glBindVertexArray(0);
 
 	glm::vec2 pixelPos;
 	int padding = 0.f;
@@ -184,8 +297,19 @@ int main() {
 		 * HERE SHOULD COME THE RENDERING CODE
 		 *********************************/
 
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glUniform1i(textureLocation, 0);
+
 		// Clear canvas
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glBindVertexArray(vao);
+
+		transformMatrix = rotate(time*.5) * translate(0.5, 0.5) * scale(0.25, 0.25) * rotate(-time);
+		color = glm::vec3(1.f, 0.f, 0.f);
+		glUniformMatrix3fv(matrixLocation, 1, GL_FALSE, glm::value_ptr(glm::mat4()));
+		glUniform3fv(colorLocation, 1, glm::value_ptr(color));
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		// Set point size (1 = 1px)
 		glPointSize(5.f);
@@ -219,56 +343,68 @@ int main() {
 		// Compute canvas
 		glBegin(GL_POINTS);
 #if 0
+#pragma omp parallel for
 			for (int i = -WIDTH/2 + padding; i < WIDTH/2 - padding; i++) {
+#pragma omp parallel for
 				for (int j = -HEIGHT/2 + padding; j < HEIGHT/2 - padding; j++) {
+					{
+						auto currentPixel = point((double) i, (double) j);
 
-					float distanceFromLight = sqrt((mainLight.pos().x - i) * (mainLight.pos().x - i) + (mainLight.pos().y - j) * (mainLight.pos().y - j));
-					if (distanceFromLight > mainLight.size()) {
-						// The pixel is too far from the light source
-						glColor3f(ambientIntensity, ambientIntensity, ambientIntensity);
-					} else {
-						// float intensity = lerp(ambientIntensity, 1., 1. - (distance / lightSize));
-						bool isIntersected = false;
-						for (auto &obstacle : obstacles) {
-							// If intersect between point(i,j) and obstacle, black, else compute intensity
-							if (areIntersected(line(point((double)i, (double)j), pt1), obstacle)) {
-								if (distance(projectPointOnCircle(point((double)i, (double)j), obstacle), pt1) <= distance(point((double)i, (double)j), pt1)) {
+						// float distanceFromLight = sqrt((mainLight.pos().x - i) * (mainLight.pos().x - i) + (mainLight.pos().y - j) * (mainLight.pos().y - j));
+						float distanceFromLight = distance(point(mainLight.pos()), currentPixel);
+						if (distanceFromLight > mainLight.size()) {
+							// The pixel is too far from the light source
+							glColor3f(ambientIntensity, ambientIntensity, ambientIntensity);
+						} else {
+							// float intensity = lerp(ambientIntensity, 1., 1. - (distance / lightSize));
+							bool isIntersected = false;
+							for (auto &obstacle : obstacles) {
+
+								if (isPointInCircle(currentPixel, obstacle)) {
 									isIntersected = true;
 									break;
 								}
+
+								if (areIntersected(line(currentPixel, pt1), obstacle)) {
+									if (distance(projectPointOnCircle(currentPixel, obstacle), pt1) <= distance(currentPixel, pt1)) {
+										isIntersected = true;
+										break;
+									}
+								}
 							}
+							float intensity;
+							if (isIntersected) {
+								intensity = ambientIntensity;
+							} else {
+								intensity = easeIn(1.f - (distanceFromLight / mainLight.size()), ambientIntensity, 1.f, 1.f);
+							}
+							glColor3f(intensity, intensity, intensity);
 						}
-						float intensity;
-						if (isIntersected) {
-							intensity = ambientIntensity;
-						} else {
-							intensity = easeIn(1.f - (distanceFromLight / mainLight.size()), ambientIntensity, 1.f, 1.f);
-						}
-						glColor3f(intensity, intensity, intensity);
+
+						// float distanceFromCircle = sqrt((circlePos.x - i) * (circlePos.x - i) + (circlePos.y - j) * (circlePos.y - j));
+						// if (distanceFromCircle < circleRadius && distanceFromCircle > circleRadius - 2.f) {
+						// 	glColor3f(1., ambientIntensity, ambientIntensity);
+						// }
+						//
+						// distanceFromCircle = sqrt((circle2Pos.x - i) * (circle2Pos.x - i) + (circle2Pos.y - j) * (circle2Pos.y - j));
+						// if (distanceFromCircle < circle2Radius && distanceFromCircle > circle2Radius - 2.f) {
+						// 	glColor3f(ambientIntensity, 1., ambientIntensity);
+						// }
+
+						glVertex2f(i, j);
 					}
-
-					// float distanceFromCircle = sqrt((circlePos.x - i) * (circlePos.x - i) + (circlePos.y - j) * (circlePos.y - j));
-					// if (distanceFromCircle < circleRadius && distanceFromCircle > circleRadius - 2.f) {
-					// 	glColor3f(1., ambientIntensity, ambientIntensity);
-					// }
-					//
-					// distanceFromCircle = sqrt((circle2Pos.x - i) * (circle2Pos.x - i) + (circle2Pos.y - j) * (circle2Pos.y - j));
-					// if (distanceFromCircle < circle2Radius && distanceFromCircle > circle2Radius - 2.f) {
-					// 	glColor3f(ambientIntensity, 1., ambientIntensity);
-					// }
-
-					glVertex2f(i, j);
 				}
 			}
 #endif
+#if 1
 			// RED
 			glColor3f(1.f, 0.f, 0.f);
-			drawPoint(pt1);
 			// drawPoint(pt2);
 			// drawPoint(pt3);
 			drawPoint(intersection1);
 			drawPoint(pt1_on_l1);
 			drawPoint(pt1_on_l2);
+			drawPoint(projectPointOnCircle(pt1, circle3));
 
 			// BLUE
 			glColor3f(0.f, 0.f, 1.f);
@@ -290,6 +426,13 @@ int main() {
 			drawPoint(c);
 			drawPoint(d);
 
+			if (isPointInCircle(pt1, circle2)) {
+				glColor3f(1.f, 0.f, 0.f);
+			} else {
+				glColor3f(1.f, 1.f, 0.f);
+			}
+			drawPoint(pt1);
+
 			if ((pp4*pp4) >= 0) {
 				glColor3f(1.f, 0.f, 0.f);
 			} else {
@@ -300,8 +443,10 @@ int main() {
 
 			glColor3f(1.f, 0.f, 1.f);
 			drawPoint(pt5);
+			drawPoint(l1 * pt1 / l1);
+#endif
 
-		glEnd();
+		glEnd(); // End draw GL_POINTS
 
 		glColor3f(0.f, 0.f, 1.f);
 		drawLine(a, b);
@@ -322,7 +467,7 @@ int main() {
 		std::chrono::duration<double> elapsed_seconds = end-start;
 		std::time_t end_time = std::chrono::system_clock::to_time_t(end);
 		// std::cout << "elapsed time: " << elapsed_seconds.count() << "s" << std::endl;
-		// std::cout << 1.0 / elapsed_seconds.count() << " FPS" << std::endl;
+		std::cout << 1.0 / elapsed_seconds.count() << " FPS" << std::endl;
 	}
 
 	std::cout << "Fin du programme." << std::endl;
