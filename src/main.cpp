@@ -8,6 +8,8 @@
 #include <math.h>
 #include <chrono>
 #include <ctime>
+#include <algorithm>
+#include <random>
 
 // glimac
 #include <glimac/SDLWindowManager.hpp>
@@ -26,8 +28,8 @@ using namespace c2ga;
 using namespace gar;
 using namespace glimac;
 
-static const int WIDTH = 500;
-static const int HEIGHT = 500;
+static const int WIDTH = 512;
+static const int HEIGHT = 512;
 
 class Vertex2DUV {
 	public:
@@ -58,6 +60,13 @@ glm::mat3 scale(float sx, float sy) {
 glm::mat3 rotate(float a) {
 	a = glm::radians(a);
 	return glm::mat3(glm::vec3(cos(a), sin(a), 0), glm::vec3(-sin(a), cos(a), 0), glm::vec3(0, 0, 1));
+}
+
+void resetCanvas(std::vector<glm::vec4> &pixelsColors, int &offsetBegin, int& offsetEnd, const int &nbPixelsToDraw, bool &drawn) {
+	std::fill(pixelsColors.begin(), pixelsColors.end(), glm::vec4(0., 0., 0., 1.));
+	offsetBegin = 0;
+	offsetEnd = nbPixelsToDraw;
+	drawn = false;
 }
 
 int main(int argc, char** argv) {
@@ -102,13 +111,23 @@ int main(int argc, char** argv) {
 	if (image == NULL)
 		std::cerr << "Erreur au chargement de l'image" << std::endl;
 
-	std::vector<glm::vec4> pixels(WIDTH * HEIGHT);
+	std::vector<glm::vec4> pixelsColors(WIDTH * HEIGHT);
+	std::vector<glm::ivec2> pixelsPositions(WIDTH * HEIGHT);
 
 	for (int i = 0; i < WIDTH; i++) {
 		for (int j = 0; j < HEIGHT; j++) {
-			pixels[(i * WIDTH) + j] = glm::vec4((double) i / WIDTH, 0., (double) j / HEIGHT, 1.); // RGBA
+			pixelsColors[(i * WIDTH) + j] = glm::vec4(0., 0., 0., 0.); // RGBA
+			pixelsPositions[(i * WIDTH) + j] = glm::ivec2(i, j); // x, y
 		}
 	}
+
+	auto rng = std::default_random_engine {};
+	std::shuffle(std::begin(pixelsPositions), std::end(pixelsPositions), rng);
+
+	// std::cout << "myvector contains:";
+	// for (int i = 0; i < pixelsPositions.size(); i++)
+	// 	std::cout << ' ' << pixelsPositions.at(i) << std::endl;
+	// std::cout << '\n';
 
 	GLuint texture;
 	glGenTextures(1, &texture);
@@ -122,7 +141,7 @@ int main(int argc, char** argv) {
 		0,
 		GL_RGBA,
 		GL_FLOAT,
-		pixels.data());
+		pixelsColors.data());
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -176,8 +195,9 @@ int main(int argc, char** argv) {
 	int padding = 0.f;
 
 	// Light Setup
-	Light mainLight(150.f, glm::vec2(90.f, 30.f));
-	float ambientIntensity = 0.05f;
+	Light mainLight(256.f, glm::vec2(90.f, 30.f));
+	float ambientIntensity = 0.2f;
+	float inObstacleColor = 0.01f;
 
 	// Add circle
 	glm::vec2 circlePos(-50.f, 80.f);
@@ -257,7 +277,13 @@ int main(int argc, char** argv) {
 	auto lastTime = std::chrono::system_clock::now();
 	int nbFrames = 0;
 
+	int nbPixelsToDraw = WIDTH * HEIGHT * .1;
+	int offsetBegin = 0;
+	int offsetEnd = nbPixelsToDraw;
+	bool drawn = false;
+
 	// Application loop:
+	float last_time_disp = 0.f;
 	bool done = false;
 	while (!done) {
 
@@ -276,16 +302,18 @@ int main(int argc, char** argv) {
 							done = true;
 							break;
 						case SDLK_KP_PLUS:
-							mainLight.size() += 10.f;
+							mainLight.size() += 25.f;
 							if (mainLight.size() > 500.f) {
 								mainLight.size() = 500.f;
 							}
+							resetCanvas(pixelsColors, offsetBegin, offsetEnd, nbPixelsToDraw, drawn);
 							break;
 						case SDLK_KP_MINUS:
-							mainLight.size() -= 10.f;
+							mainLight.size() -= 25.f;
 							if (mainLight.size() < 0.f) {
 								mainLight.size() = 0.f;
 							}
+							resetCanvas(pixelsColors, offsetBegin, offsetEnd, nbPixelsToDraw, drawn);
 							break;
 						default:
 							break;
@@ -295,6 +323,8 @@ int main(int argc, char** argv) {
 					if (windowManager.isMouseButtonPressed(SDL_BUTTON_LEFT)) {
 						mainLight.pos() += glm::vec2(e.motion.xrel, -e.motion.yrel);
 						pt1 = point(mainLight.pos().x, mainLight.pos().y);
+						// Reset pixels to black
+						resetCanvas(pixelsColors, offsetBegin, offsetEnd, nbPixelsToDraw, drawn);
 						break;
 					}
 				default:
@@ -307,48 +337,116 @@ int main(int argc, char** argv) {
 		 *********************************/
 
 		// Update pixels colors
-		float intensity;
-		bool isIntersected;
-		#pragma omp parallel for
-		for (int i = 0; i < WIDTH; i++) {
-			#pragma omp parallel for
-			for (int j = 0; j < HEIGHT; j++) {
-				auto currentPixel = point((double) j - WIDTH*.5, - (double) i + HEIGHT*.5);
+		float intensity = 0.f;
+		bool isIntersected = false;
+		bool isInCircle = false;
+		float distanceFromLight;
 
-				// float distanceFromLight = sqrt((mainLight.pos().x - i) * (mainLight.pos().x - i) + (mainLight.pos().y - j) * (mainLight.pos().y - j));
-				float distanceFromLight = distance(point(mainLight.pos()), currentPixel);
-				if (distanceFromLight > mainLight.size()) {
-					// The pixel is too far from the light source
-					intensity = ambientIntensity;
-				} else {
-					// float intensity = lerp(ambientIntensity, 1., 1. - (distance / lightSize));
-					isIntersected = false;
-					for (auto &obstacle : obstacles) {
+		// Compute pixels
+		if (!drawn) {
+			// Shuffle pixelsPositions
 
-						if (isPointInCircle(currentPixel, obstacle)) {
-							isIntersected = true;
-							break;
-						}
+			if (offsetBegin <= WIDTH * HEIGHT) {
+				for (int i = offsetBegin; i <= offsetEnd; i++) {
+					// Compute pixel color
+					auto coordX = pixelsPositions[i].x;
+					auto coordY = pixelsPositions[i].y;
+					auto idx = coordX * WIDTH + coordY;
 
-						if (areIntersected(line(currentPixel, pt1), obstacle)) {
-							if (distance(projectPointOnCircle(currentPixel, obstacle), pt1) <= distance(currentPixel, pt1)) {
+					// Get the multivector (point) from X and Y coords of the pixel
+					auto currentPixel = point((double) coordY - WIDTH*.5, - (double) coordX + HEIGHT*.5);
+
+					// Get the distance between the pixel and the light
+					distanceFromLight = distance(point(mainLight.pos()), currentPixel);
+					if (distanceFromLight > mainLight.size()) {
+						// The pixel is too far from the light source
+						intensity = ambientIntensity; // We show the ambiant light
+					} else {
+						isIntersected = false;
+						isInCircle = false;
+						for (auto &obstacle : obstacles) {
+
+							if (isPointInCircle(currentPixel, obstacle)) {
 								isIntersected = true;
+								isInCircle = true;
 								break;
 							}
+
+							if (areIntersected(line(currentPixel, pt1), obstacle)) {
+								if (distance(projectPointOnCircle(currentPixel, obstacle), pt1) <= distance(currentPixel, pt1)) {
+									isIntersected = true;
+									// break;
+								}
+							}
+						}
+						if (isIntersected) {
+							if (isInCircle) {
+								intensity = inObstacleColor;
+							} else {
+								intensity = ambientIntensity;
+							}
+						} else {
+							intensity = easeIn(1.f - (distanceFromLight / mainLight.size()), ambientIntensity, 1.f, 1.f);
 						}
 					}
-					if (isIntersected) {
-						intensity = ambientIntensity;
-					} else {
-						intensity = easeIn(1.f - (distanceFromLight / mainLight.size()), ambientIntensity, 1.f, 1.f);
-					}
-					// glColor3f(intensity, intensity, intensity);
-				}
 
-				// pixels[(i * WIDTH) + j] = glm::vec4((double) i / WIDTH * cos(time/5), 0., sin(time/10), 1.); // RGBA
-				pixels[(i * WIDTH) + j] = glm::vec4(intensity, intensity, intensity, 1.); // RGBA
+					pixelsColors[idx] = glm::vec4(intensity, intensity, intensity, 1.); // RGBA
+
+				}
+				offsetBegin = offsetEnd + 1;
+				offsetEnd = offsetBegin + nbPixelsToDraw;
+			} else {
+				drawn = true;
+				std::shuffle(std::begin(pixelsPositions), std::end(pixelsPositions), rng);
+			}
+			if (offsetEnd > WIDTH * HEIGHT) {
+				offsetEnd = WIDTH * HEIGHT;
 			}
 		}
+
+		// #pragma omp parallel for
+		// for (int i = 0; i < WIDTH; i++) {
+			// #pragma omp parallel for
+			// for (int j = 0; j < HEIGHT; j++) {
+				// if (i == 0 && j == 0) {
+					// auto currentPixel = point((double) j - WIDTH*.5, - (double) i + HEIGHT*.5);
+				// }
+
+				// distanceFromLight = distance(point(mainLight.pos()), currentPixel);
+				// if (distanceFromLight > mainLight.size()) {
+				// 	// The pixel is too far from the light source
+				// 	intensity = ambientIntensity;
+				// } else {
+				// 	// float intensity = lerp(ambientIntensity, 1., 1. - (distance / lightSize));
+				// 	isIntersected = false;
+				// 	for (auto &obstacle : obstacles) {
+				//
+				// 		if (isPointInCircle(currentPixel, obstacle)) {
+				// 			isIntersected = true;
+				// 			break;
+				// 		}
+				//
+				// 		if (areIntersected(line(currentPixel, pt1), obstacle)) {
+				// 			if (distance(projectPointOnCircle(currentPixel, obstacle), pt1) <= distance(currentPixel, pt1)) {
+				// 				isIntersected = true;
+				// 				break;
+				// 			}
+				// 		}
+				// 	}
+				// 	if (isIntersected) {
+				// 		intensity = ambientIntensity;
+				// 	} else {
+				// 		intensity = easeIn(1.f - (distanceFromLight / mainLight.size()), ambientIntensity, 1.f, 1.f);
+				// 	}
+				// 	// glColor3f(intensity, intensity, intensity);
+				// }
+
+				// pixels[(i * WIDTH) + j] = glm::vec4((double) i / WIDTH * cos(time/5), 0., sin(time/10), 1.); // RGBA
+				// pixels[(i * WIDTH) + j] = glm::vec4(1., 1., 0., 1.); // RGBA
+				// pixels[(i * WIDTH) + j] = glm::vec4(sin(time), intensity, intensity, 1.); // RGBA
+				// pixels[(i * WIDTH) + j] = glm::vec4(intensity, intensity, intensity, 1.); // RGBA
+			// }
+		// }
 
 		// Update texture
 		glBindTexture(GL_TEXTURE_2D, texture);
@@ -361,7 +459,7 @@ int main(int argc, char** argv) {
 			0,
 			GL_RGBA,
 			GL_FLOAT,
-			pixels.data());
+			pixelsColors.data());
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -374,7 +472,7 @@ int main(int argc, char** argv) {
 		// Draw Quad
 		glBindVertexArray(vao);
 
-		// transformMatrix = rotate(time*.5) * translate(0.5, 0.5) * scale(0.25, 0.25) * rotate(-time);
+		// transformMatrix = rotate(time*50.f) * translate(0.5, 0.5) * scale(0.25, 0.25) * rotate(-time);
 		transformMatrix = glm::mat3();
 		color = glm::vec3(cos(time/20), 0.1f, sin(time/10));
 		glUniformMatrix3fv(matrixLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));
@@ -542,7 +640,13 @@ int main(int argc, char** argv) {
 		std::chrono::duration<double> elapsed_seconds = end-start;
 		std::time_t end_time = std::chrono::system_clock::to_time_t(end);
 		// std::cout << "elapsed time: " << elapsed_seconds.count() << "s" << std::endl;
-		std::cout << 1.0 / elapsed_seconds.count() << " FPS" << std::endl;
+		// std::cout << "time: " << time << std::endl;
+		// std::cout << "fmod(time, 10.f): " << fmod(time, 10.f) << std::endl;
+		if (last_time_disp > 5.f) {
+			std::cout << 1.0 / elapsed_seconds.count() << " FPS" << std::endl;
+			last_time_disp = 0.f;
+		}
+		last_time_disp += 0.01f;
 	}
 
 	glDeleteBuffers(1, &vbo);
