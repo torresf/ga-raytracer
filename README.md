@@ -22,5 +22,7 @@ The inner product of two normalized points gives the square of the Euclidean dis
 
 ## Optimisation
 
-- PBOs
-- glTexSubImage2D()
+- [x] glTexImage2D
+- [x] Randomize array of pixel to draw
+- [x] Draw only range by range of pixels
+- [x] In fragment shader, fill the blanks based on neighbours pixels color.

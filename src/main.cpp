@@ -62,9 +62,9 @@ glm::mat3 rotate(float a) {
 	return glm::mat3(glm::vec3(cos(a), sin(a), 0), glm::vec3(-sin(a), cos(a), 0), glm::vec3(0, 0, 1));
 }
 
-void resetCanvas(std::vector<glm::vec4> &pixelsColors, int &offsetBegin, int& offsetEnd, const int &nbPixelsToDraw, bool &drawn) {
+void resetCanvas(std::vector<glm::vec4> &pixelsColors, int &offsetStart, int& offsetEnd, const int &nbPixelsToDraw, bool &drawn) {
 	std::fill(pixelsColors.begin(), pixelsColors.end(), glm::vec4(0., 0., 0., 1.));
-	offsetBegin = 0;
+	offsetStart = 0;
 	offsetEnd = nbPixelsToDraw;
 	drawn = false;
 }
@@ -278,7 +278,7 @@ int main(int argc, char** argv) {
 	int nbFrames = 0;
 
 	int nbPixelsToDraw = WIDTH * HEIGHT * .1;
-	int offsetBegin = 0;
+	int offsetStart = 0;
 	int offsetEnd = nbPixelsToDraw;
 	bool drawn = false;
 
@@ -306,14 +306,14 @@ int main(int argc, char** argv) {
 							if (mainLight.size() > 500.f) {
 								mainLight.size() = 500.f;
 							}
-							resetCanvas(pixelsColors, offsetBegin, offsetEnd, nbPixelsToDraw, drawn);
+							resetCanvas(pixelsColors, offsetStart, offsetEnd, nbPixelsToDraw, drawn);
 							break;
 						case SDLK_KP_MINUS:
 							mainLight.size() -= 25.f;
 							if (mainLight.size() < 0.f) {
 								mainLight.size() = 0.f;
 							}
-							resetCanvas(pixelsColors, offsetBegin, offsetEnd, nbPixelsToDraw, drawn);
+							resetCanvas(pixelsColors, offsetStart, offsetEnd, nbPixelsToDraw, drawn);
 							break;
 						default:
 							break;
@@ -324,7 +324,8 @@ int main(int argc, char** argv) {
 						mainLight.pos() += glm::vec2(e.motion.xrel, -e.motion.yrel);
 						pt1 = point(mainLight.pos().x, mainLight.pos().y);
 						// Reset pixels to black
-						resetCanvas(pixelsColors, offsetBegin, offsetEnd, nbPixelsToDraw, drawn);
+						resetCanvas(pixelsColors, offsetStart, offsetEnd, nbPixelsToDraw, drawn);
+						// std::shuffle(std::begin(pixelsPositions), std::end(pixelsPositions), rng);
 						break;
 					}
 				default:
@@ -345,9 +346,11 @@ int main(int argc, char** argv) {
 		// Compute pixels
 		if (!drawn) {
 			// Shuffle pixelsPositions
+			if (offsetStart == 0)
+				std::shuffle(std::begin(pixelsPositions), std::end(pixelsPositions), rng);
 
-			if (offsetBegin <= WIDTH * HEIGHT) {
-				for (int i = offsetBegin; i <= offsetEnd; i++) {
+			if (offsetStart <= WIDTH * HEIGHT) {
+				for (int i = offsetStart; i <= offsetEnd; i++) {
 					// Compute pixel color
 					auto coordX = pixelsPositions[i].x;
 					auto coordY = pixelsPositions[i].y;
@@ -393,11 +396,10 @@ int main(int argc, char** argv) {
 					pixelsColors[idx] = glm::vec4(intensity, intensity, intensity, 1.); // RGBA
 
 				}
-				offsetBegin = offsetEnd + 1;
-				offsetEnd = offsetBegin + nbPixelsToDraw;
+				offsetStart = offsetEnd + 1;
+				offsetEnd = offsetStart + nbPixelsToDraw;
 			} else {
 				drawn = true;
-				std::shuffle(std::begin(pixelsPositions), std::end(pixelsPositions), rng);
 			}
 			if (offsetEnd > WIDTH * HEIGHT) {
 				offsetEnd = WIDTH * HEIGHT;
@@ -474,7 +476,7 @@ int main(int argc, char** argv) {
 
 		// transformMatrix = rotate(time*50.f) * translate(0.5, 0.5) * scale(0.25, 0.25) * rotate(-time);
 		transformMatrix = glm::mat3();
-		color = glm::vec3(cos(time/20), 0.1f, sin(time/10));
+		color = glm::vec3(1.f, cos(time * .5f), sin(time *.5f));
 		glUniformMatrix3fv(matrixLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));
 		glUniform3fv(colorLocation, 1, glm::value_ptr(color));
 		glDrawArrays(GL_QUADS, 0, 4);

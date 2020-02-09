@@ -23,7 +23,7 @@ vec3 blur() {
 						vFragTexture.x + i/512. >= 0. &&
 						vFragTexture.x + i/512. <= 1. &&
 						vFragTexture.y + j/512. >= 0. &&
-						vFragTexture.y + j/512. <= .5
+						vFragTexture.y + j/512. <= 1.
 						) {
 						if ((textureOffset(uTexture, vFragTexture, ivec2(i, j))).xyz != vec3(0., 0., 0.)) {
 							color += (textureOffset(uTexture, vFragTexture, ivec2(i, j))).xyz;
@@ -39,7 +39,7 @@ vec3 blur() {
 
 void main() {
 	if ((texture(uTexture, vFragTexture)).xyz == vec3(0., 0., 0.)) {
-		fFragColor = blur();
+		fFragColor = blur() * uColor;
 	} else {
 		fFragColor = (texture(uTexture, vFragTexture)).xyz * uColor;
 		// fFragColor = vec3(1., 0, 0);
