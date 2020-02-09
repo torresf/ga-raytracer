@@ -19,6 +19,7 @@ The inner product of two normalized points gives the square of the Euclidean dis
 - [x] Display the two points from a point pair
 - [x] IsPointInCircle
 - [ ] Get position of point on a line
+- [ ] Fix mirror bug in intersection with circle
 
 ## Optimisation
 
