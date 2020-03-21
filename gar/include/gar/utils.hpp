@@ -1,3 +1,8 @@
+/*
+ * Author : Florian TORRES
+ * Date : March 2020
+ */
+
 #pragma once
 #ifndef __UTILS__HPP
 #define __UTILS__HPP
@@ -8,10 +13,10 @@ float lerp(float a, float b, float t) {
 	return a + t * (b - a);
 }
 
-float easeIn(float t, float b, float c, float d) {
+const float easeIn(const float t, const float b, const float c, const float d) {
 	return c*(t/d)*t + b;
 }
 
-}
+} // namespace gar
 
 #endif

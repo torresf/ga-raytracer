@@ -1,3 +1,8 @@
+/*
+ * Author : Florian TORRES
+ * Date : March 2020
+ */
+
 #pragma once
 #ifndef __DRAWING__HPP
 #define __DRAWING__HPP
@@ -7,7 +12,7 @@ using namespace c2ga;
 namespace gar {
 
 void drawLandmark(const int width, const int height) {
-	float padding = 10.f;
+	float padding = 0.f;
 	// Axe des abscisses rouge
 	glBegin(GL_LINES);
 		glColor3ub(255, 255, 255);
@@ -31,8 +36,8 @@ template<typename T>
 void drawPointPair(const Mvec<T> &pp) {
 	if (pp.norm()*pp.norm() > 0) {
 		// 2 points
-		Mvec<T> p1 = (pp + sqrt(pp*pp)) / (-ei<double>() | pp);
-		Mvec<T> p2 = (pp - sqrt(pp*pp)) / (-ei<double>() | pp);
+		Mvec<T> p1 = (pp + sqrt(pp*pp)) / (-ei<T>() | pp);
+		Mvec<T> p2 = (pp - sqrt(pp*pp)) / (-ei<T>() | pp);
 		drawPoint(p1);
 		drawPoint(p2);
 	}
