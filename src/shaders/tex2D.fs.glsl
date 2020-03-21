@@ -2,17 +2,18 @@
 
 in vec2 vFragTexture;
 uniform vec3 uColor;
+uniform vec3 uIntensity;
 uniform sampler2D uTexture;
 
 out vec3 fFragColor;
 
-vec3 blur() {
+vec3 fillBlackPixel() {
 	vec3 color;
 	int kernelSize = 3;
 	int min_bound;
 	int max_bound;
 	int moyenneDiv = 0;
-	while (color == vec3(0., 0., 0.)) {
+	while (color == vec3(0., 0., 0.) && moyenneDiv < 9) {
 		kernelSize += 2;
 		min_bound = -(kernelSize-1) / 2;
 		max_bound = +(kernelSize-1) / 2;
@@ -39,9 +40,8 @@ vec3 blur() {
 
 void main() {
 	if ((texture(uTexture, vFragTexture)).xyz == vec3(0., 0., 0.)) {
-		fFragColor = blur() * uColor;
+		fFragColor = fillBlackPixel() * uColor * uIntensity;
 	} else {
-		fFragColor = (texture(uTexture, vFragTexture)).xyz * uColor;
-		// fFragColor = vec3(1., 0, 0);
+		fFragColor = (texture(uTexture, vFragTexture)).xyz * uColor * uIntensity;
 	}
 };

@@ -1,3 +1,8 @@
+/*
+ * Author : Florian TORRES
+ * Date : March 2020
+ */
+
 // C2GA
 #include <c2ga/Mvec.hpp>
 
@@ -99,18 +104,16 @@ int main(int argc, char** argv) {
 	program.use();
 	GLint matrixLocation = glGetUniformLocation(program.getGLId(), "uModelMatrix");
 	GLint colorLocation = glGetUniformLocation(program.getGLId(), "uColor");
+	GLint intensityLocation = glGetUniformLocation(program.getGLId(), "uIntensity");
 	GLint textureLocation = glGetUniformLocation(program.getGLId(), "uTexture");
 
 	float time = 0.f;
 	glm::mat3 transformMatrix = rotate(time);
-	glm::vec3 color = glm::vec3(0.f);
+	glm::vec3 color = glm::vec3(1.f);
+	glm::vec3 lightIntensity = glm::vec3(1.f, .9f, .8f);
+	float lightIntensityMult = 1.5f;
 
-	// Textures
-	std::unique_ptr<Image> image = loadImage("/home/torresf/Documents/ga-raytracer/assets/triforce.png");
-
-	if (image == NULL)
-		std::cerr << "Erreur au chargement de l'image" << std::endl;
-
+	// Texture
 	std::vector<glm::vec4> pixelsColors(WIDTH * HEIGHT);
 	std::vector<glm::ivec2> pixelsPositions(WIDTH * HEIGHT);
 
@@ -121,13 +124,9 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	// Randomize pixel positions
 	auto rng = std::default_random_engine {};
 	std::shuffle(std::begin(pixelsPositions), std::end(pixelsPositions), rng);
-
-	// std::cout << "myvector contains:";
-	// for (int i = 0; i < pixelsPositions.size(); i++)
-	// 	std::cout << ' ' << pixelsPositions.at(i) << std::endl;
-	// std::cout << '\n';
 
 	GLuint texture;
 	glGenTextures(1, &texture);
@@ -148,14 +147,12 @@ int main(int argc, char** argv) {
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	// Création du VBO
+	// VBO creation and binding
 	GLuint vbo;
 	glGenBuffers(1, &vbo);
-
-	// Binding du VBO
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-	// Envoie des données de vertex
+	// Sending vertices data
 	Vertex2DUV vertices[] = {
 		Vertex2DUV(glm::vec2(-1, -1), glm::vec2(0, 1)),
 		Vertex2DUV(glm::vec2( 1, -1), glm::vec2(1, 1)),
@@ -164,18 +161,14 @@ int main(int argc, char** argv) {
 	};
 	glBufferData(GL_ARRAY_BUFFER, 4 * sizeof(Vertex2DUV), vertices, GL_STATIC_DRAW);
 
-	// Débinding du VBO
+	// VBO Unbinding
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	// Débinding du VBO
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	// Création du VAO
+	// VAO creation and binding
 	GLuint vao;
 	glGenVertexArrays(1, &vao);
-
-	// Binding du VAO
 	glBindVertexArray(vao);
+
 	// Activation de l'attribut de sommet 0 (la position)
 	const GLuint VERTEX_ATTR_POSITION = 0;
 	const GLuint VERTEX_ATTR_TEXTURE = 1;
@@ -188,14 +181,11 @@ int main(int argc, char** argv) {
 	glVertexAttribPointer(VERTEX_ATTR_TEXTURE, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex2DUV), (const GLvoid*) offsetof(Vertex2DUV, texture));
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	// Débinding du VAO
+	// VAO unbind
 	glBindVertexArray(0);
 
-	glm::vec2 pixelPos;
-	int padding = 0.f;
-
 	// Light Setup
-	Light mainLight(256.f, glm::vec2(90.f, 30.f));
+	Light mainLight(350.f, 512.f, glm::vec2(90.f, 30.f));
 	float ambientIntensity = 0.2f;
 	float inObstacleColor = 0.01f;
 
@@ -206,34 +196,23 @@ int main(int argc, char** argv) {
 	float circle2Radius = 60.f;
 	float circle3Radius = 40.f;
 
-	Mvec<double> pt1 = point(90.0, 30.0);
+	Mvec<double> lightPosition = point(90.0, 30.0);
+	Mvec<double> pt1 = point(-80.0, 30.0);
 	Mvec<double> pt2 = point(30.0, 50.0);
 	Mvec<double> pt3 = point(50.0, 20.0);
 
-	Mvec<double> l0 = pt1 ^ pt2 ^ ei<double>();
-	Mvec<double> circle1 = pt1 ^ pt2 ^ pt3;
+	Mvec<double> l0 = lightPosition ^ pt2 ^ ei<double>();
+	// Mvec<double> circle1 = pt1 ^ pt2 ^ pt3;
+	Mvec<double> circle1 = circle(-80, -120, 20);
 	Mvec<double> circle2 = circle(-80, 50, 60);
 	Mvec<double> circle3 = circle(-70, 120, 40);
+	Mvec<double> circle4 = circle(120, -100, 80);
 	Mvec<double> circum = getCenterOfCircle(circle1);
 	Mvec<double> circum2 = getCenterOfCircle(circle2);
 	Mvec<double> circum3 = getCenterOfCircle(circle3);
 
-	// Normalize point
-	// point /= - point | ei<double>(); // = composante en E0
-
-	std::cout << "pt1 : " << pt1 << std::endl;
-	std::cout << "l0 : " << l0 << std::endl;
-	std::cout << "l0.grade() : " << l0.grade() << std::endl;
-	std::cout << "circle1 : " << circle1 << std::endl;
-	std::cout << "circle2 : " << circle2 << std::endl;
-	std::cout << "circle3 : " << circle3 << std::endl;
-
 	Mvec<double> pt4 = point(0.0, 0.0);
 	Mvec<double> pt5 = projectPointOnCircle(pt4, circle1);
-	std::cout << "pt4 : " << pt4 << std::endl;
-	std::cout << "pt5 : " << pt5 << std::endl;
-	std::cout << "pt4.grade() : " << pt4.grade() << std::endl;
-	std::cout << "pt5.grade() : " << pt5.grade() << std::endl;
 
 	Mvec<double> a = point(-120, -150);
 	Mvec<double> b = point(-120, -50);
@@ -255,7 +234,7 @@ int main(int argc, char** argv) {
 	Mvec<double> pp1 = circle1 / circle2;
 	std::cout << "pp1 : " << pp1 << std::endl;
 
-	Mvec<double> pp2 = pt1 ^ pt2;
+	Mvec<double> pp2 = lightPosition ^ pt2;
 	std::cout << "pp2 : " << pp2 << std::endl;
 	Mvec<double> pp2_1; // First point of pp2 pair point
 	Mvec<double> pp2_2; // Second point of pp2 pair point
@@ -267,23 +246,33 @@ int main(int argc, char** argv) {
 	std::cout << "pp4 : " << pp4 << std::endl;
 	Mvec<double> pp4_line;
 
-	Mvec<double> pt1_on_l1;
-	Mvec<double> pt1_on_l2;
+	Mvec<double> lightPosition_on_l1;
+	Mvec<double> lightPosition_on_l2;
 
 	std::vector<Mvec<double>> obstacles;
+	obstacles.push_back(circle1);
 	obstacles.push_back(circle2);
 	obstacles.push_back(circle3);
+	obstacles.push_back(circle4);
 
 	auto lastTime = std::chrono::system_clock::now();
 	int nbFrames = 0;
 
-	int nbPixelsToDraw = WIDTH * HEIGHT * .1;
+	// Iterative drawing
+	int nbPixelsTotal = WIDTH * HEIGHT;
+	int nbPixelsToDraw = nbPixelsTotal * .05; // We draw only 5% of the image at each draw loop until the all image is processed
 	int offsetStart = 0;
 	int offsetEnd = nbPixelsToDraw;
 	bool drawn = false;
 
+	// Init pixel informations
+	float intensity = 0.f;
+	bool isIntersected = false;
+	bool isInCircle = false;
+	float distanceFromLight;
+	int showShadows = 2; // 0: No shadows, 1: Basic shadows, 2: Advanced shadows
+
 	// Application loop:
-	float last_time_disp = 0.f;
 	bool done = false;
 	while (!done) {
 
@@ -303,16 +292,32 @@ int main(int argc, char** argv) {
 							break;
 						case SDLK_KP_PLUS:
 							mainLight.size() += 25.f;
-							if (mainLight.size() > 500.f) {
-								mainLight.size() = 500.f;
-							}
+							mainLight.size() = std::min(mainLight.size(), mainLight.maxSize());
 							resetCanvas(pixelsColors, offsetStart, offsetEnd, nbPixelsToDraw, drawn);
 							break;
 						case SDLK_KP_MINUS:
 							mainLight.size() -= 25.f;
-							if (mainLight.size() < 0.f) {
-								mainLight.size() = 0.f;
-							}
+							mainLight.size() = std::max(mainLight.size(), 0.f);
+							resetCanvas(pixelsColors, offsetStart, offsetEnd, nbPixelsToDraw, drawn);
+							break;
+						case SDLK_UP:
+							lightIntensityMult += .5f;
+							lightIntensityMult = std::min(lightIntensityMult, 4.f);
+							resetCanvas(pixelsColors, offsetStart, offsetEnd, nbPixelsToDraw, drawn);
+							break;
+						case SDLK_DOWN:
+							lightIntensityMult -= .5f;
+							lightIntensityMult = std::max(lightIntensityMult, 0.f);
+							resetCanvas(pixelsColors, offsetStart, offsetEnd, nbPixelsToDraw, drawn);
+							break;
+						case SDLK_s:
+							showShadows = (showShadows + 1) % 3;
+							if (showShadows == 0)
+								std::cout << "No shadows" << std::endl;
+							if (showShadows == 1)
+								std::cout << "Basic shadows" << std::endl;
+							if (showShadows == 2)
+								std::cout << "Advanced shadows" << std::endl;
 							resetCanvas(pixelsColors, offsetStart, offsetEnd, nbPixelsToDraw, drawn);
 							break;
 						default:
@@ -322,7 +327,7 @@ int main(int argc, char** argv) {
 				case SDL_MOUSEMOTION:
 					if (windowManager.isMouseButtonPressed(SDL_BUTTON_LEFT)) {
 						mainLight.pos() += glm::vec2(e.motion.xrel, -e.motion.yrel);
-						pt1 = point(mainLight.pos().x, mainLight.pos().y);
+						lightPosition = point(mainLight.pos().x, mainLight.pos().y);
 						// Reset pixels to black
 						resetCanvas(pixelsColors, offsetStart, offsetEnd, nbPixelsToDraw, drawn);
 						// std::shuffle(std::begin(pixelsPositions), std::end(pixelsPositions), rng);
@@ -337,12 +342,15 @@ int main(int argc, char** argv) {
 		 * HERE SHOULD COME THE RENDERING CODE
 		 *********************************/
 
-		// Update pixels colors
-		float intensity = 0.f;
-		bool isIntersected = false;
-		bool isInCircle = false;
-		float distanceFromLight;
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		// Init pixel informations
+		intensity = 0.f;
+		isIntersected = false;
+		isInCircle = false;
+		distanceFromLight;
+
+#if 1
 		// Compute pixels
 		if (!drawn) {
 			// Shuffle pixelsPositions
@@ -355,11 +363,14 @@ int main(int argc, char** argv) {
 					auto coordX = pixelsPositions[i].x;
 					auto coordY = pixelsPositions[i].y;
 					auto idx = coordX * WIDTH + coordY;
+					auto closeToCircle = false;
+					auto distanceFromBackPoint = 0.f;
+					auto lessDistanceFromBackPoint = 0.f;
 
 					// Get the multivector (point) from X and Y coords of the pixel
-					auto currentPixel = point((double) coordY - WIDTH*.5, - (double) coordX + HEIGHT*.5);
+					auto currentPixel = point((double)coordY - WIDTH * .5, -(double)coordX + HEIGHT * .5);
 
-					// Get the distance between the pixel and the light
+					// Get the distance between the pixel and the light source
 					distanceFromLight = distance(point(mainLight.pos()), currentPixel);
 					if (distanceFromLight > mainLight.size()) {
 						// The pixel is too far from the light source
@@ -369,86 +380,79 @@ int main(int argc, char** argv) {
 						isInCircle = false;
 						for (auto &obstacle : obstacles) {
 
-							if (isPointInCircle(currentPixel, obstacle)) {
+							if (isPointInCircle(currentPixel, obstacle))
+							{
 								isIntersected = true;
 								isInCircle = true;
 								break;
 							}
 
-							if (areIntersected(line(currentPixel, pt1), obstacle)) {
-								if (distance(projectPointOnCircle(currentPixel, obstacle), pt1) <= distance(currentPixel, pt1)) {
-									isIntersected = true;
-									// break;
+							if (showShadows > 0)
+							{
+								if (areIntersected(line(currentPixel, lightPosition), obstacle))
+								{
+									auto interBetweenLightAndObstacle = getIntersection(line(currentPixel, lightPosition), obstacle);
+									auto frontPoint = getFirstPointFromPointPair(interBetweenLightAndObstacle);
+									auto backPoint = getSecondPointFromPointPair(interBetweenLightAndObstacle);
+
+									// BASIC SHADOWS
+									// Detect if the pixel is in shadow of an obstacle
+									if (distance(currentPixel, lightPosition) >= distance(currentPixel, frontPoint))
+									{
+										if (distance(projectPointOnCircle(currentPixel, obstacle), lightPosition) <= distance(currentPixel, lightPosition))
+										{
+											isIntersected = true;
+										}
+									}
+
+
+									// // ADVANCED SHADOWS
+									if (showShadows == 2) {
+										// Detect if the pixel is in the shadow near the obstacle
+										distanceFromBackPoint = distance(backPoint, currentPixel);
+										if (distanceFromBackPoint < 25.f)
+										{
+											closeToCircle = true;
+											lessDistanceFromBackPoint = distanceFromBackPoint;
+										}
+									}
 								}
 							}
 						}
+
+						intensity = easeIn(1.f - (distanceFromLight / mainLight.size()), ambientIntensity, 1.f, 1.5f);
+
 						if (isIntersected) {
 							if (isInCircle) {
-								intensity = inObstacleColor;
+								// The pixel is in a circle
+								intensity = easeIn(1.f - (distanceFromLight / mainLight.size()), inObstacleColor, ambientIntensity, 1.f);
+								intensity = lerp(ambientIntensity, intensity, 1.f - (distanceFromLight / mainLight.size()));
 							} else {
+								// The pixel is not is behind a circle
 								intensity = ambientIntensity;
+								if (closeToCircle) {
+									intensity = lerp(ambientIntensity * .7f, ambientIntensity, lessDistanceFromBackPoint / 25.f);
+								}
 							}
 						} else {
-							intensity = easeIn(1.f - (distanceFromLight / mainLight.size()), ambientIntensity, 1.f, 1.f);
+							if (closeToCircle) {
+								// intensity = lerp(ambientIntensity, intensity, 1.f - (distanceFromLight / mainLight.size()));
+								intensity = easeIn(1.f - lessDistanceFromBackPoint / 30.f, intensity, 1.f, 1.f);
+							}
 						}
 					}
-
 					pixelsColors[idx] = glm::vec4(intensity, intensity, intensity, 1.); // RGBA
-
 				}
+
 				offsetStart = offsetEnd + 1;
 				offsetEnd = offsetStart + nbPixelsToDraw;
+				if (offsetEnd > nbPixelsTotal) {
+					offsetEnd = nbPixelsTotal;
+				}
 			} else {
 				drawn = true;
 			}
-			if (offsetEnd > WIDTH * HEIGHT) {
-				offsetEnd = WIDTH * HEIGHT;
-			}
 		}
-
-		// #pragma omp parallel for
-		// for (int i = 0; i < WIDTH; i++) {
-			// #pragma omp parallel for
-			// for (int j = 0; j < HEIGHT; j++) {
-				// if (i == 0 && j == 0) {
-					// auto currentPixel = point((double) j - WIDTH*.5, - (double) i + HEIGHT*.5);
-				// }
-
-				// distanceFromLight = distance(point(mainLight.pos()), currentPixel);
-				// if (distanceFromLight > mainLight.size()) {
-				// 	// The pixel is too far from the light source
-				// 	intensity = ambientIntensity;
-				// } else {
-				// 	// float intensity = lerp(ambientIntensity, 1., 1. - (distance / lightSize));
-				// 	isIntersected = false;
-				// 	for (auto &obstacle : obstacles) {
-				//
-				// 		if (isPointInCircle(currentPixel, obstacle)) {
-				// 			isIntersected = true;
-				// 			break;
-				// 		}
-				//
-				// 		if (areIntersected(line(currentPixel, pt1), obstacle)) {
-				// 			if (distance(projectPointOnCircle(currentPixel, obstacle), pt1) <= distance(currentPixel, pt1)) {
-				// 				isIntersected = true;
-				// 				break;
-				// 			}
-				// 		}
-				// 	}
-				// 	if (isIntersected) {
-				// 		intensity = ambientIntensity;
-				// 	} else {
-				// 		intensity = easeIn(1.f - (distanceFromLight / mainLight.size()), ambientIntensity, 1.f, 1.f);
-				// 	}
-				// 	// glColor3f(intensity, intensity, intensity);
-				// }
-
-				// pixels[(i * WIDTH) + j] = glm::vec4((double) i / WIDTH * cos(time/5), 0., sin(time/10), 1.); // RGBA
-				// pixels[(i * WIDTH) + j] = glm::vec4(1., 1., 0., 1.); // RGBA
-				// pixels[(i * WIDTH) + j] = glm::vec4(sin(time), intensity, intensity, 1.); // RGBA
-				// pixels[(i * WIDTH) + j] = glm::vec4(intensity, intensity, intensity, 1.); // RGBA
-			// }
-		// }
 
 		// Update texture
 		glBindTexture(GL_TEXTURE_2D, texture);
@@ -474,111 +478,57 @@ int main(int argc, char** argv) {
 		// Draw Quad
 		glBindVertexArray(vao);
 
-		// transformMatrix = rotate(time*50.f) * translate(0.5, 0.5) * scale(0.25, 0.25) * rotate(-time);
 		transformMatrix = glm::mat3();
-		color = glm::vec3(1.f, cos(time * .5f), sin(time *.5f));
+		// color = glm::vec3(1.f, cos(time * .5f), sin(time *.5f));
 		glUniformMatrix3fv(matrixLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));
 		glUniform3fv(colorLocation, 1, glm::value_ptr(color));
+		glUniform3fv(intensityLocation, 1, glm::value_ptr(lightIntensity * lightIntensityMult));
 		glDrawArrays(GL_QUADS, 0, 4);
 
 		glBindVertexArray(0);
 		glBindTexture(GL_TEXTURE_2D, 0);
+#endif
 		time += 0.01;
+#if 0
 
 		// Set point size (1 = 1px)
-		// glPointSize(5.f);
-		// drawLandmark(WIDTH, HEIGHT);
+		glPointSize(5.f);
+		drawLandmark(WIDTH, HEIGHT);
 
-		// circle1 = pt1 ^ pt2 ^ pt3;
-		// circum = -circle1 / (ei<double>() < circle1);
-		// circlePos.x = circum[E1];
-		// circlePos.y = circum[E2];
-		// circleRadius = distance(circum, pt1);
-		// circle2Pos.x = circum2[E1];
-		// circle2Pos.y = circum2[E2];
-		// pp1 = circle1 | circle2;
-		// pp2 = pt1 ^ pt2;
-		// pp2_1 = pp2 / (- pp2 | ei<double>());
-		// pp2_1 = -pp2_1;
-		// pp4 = getIntersection(circle1, circle2);
-		// pp4_line = pp4 ^ ei<double>();
-		//
-		// l0 = pt1 ^ pt2 ^ ei<double>();
-		// intersection2 = e0<double>() | getIntersection(l1, l0);
-		// intersection2 = normalize(intersection2);
-		// intersection3 = e0<double>() | getIntersection(l2, l0);
-		// intersection3 = normalize(intersection3);
-		//
-		// pt1_on_l1 = projectPointOnLine(pt1, l1);
-		// pt1_on_l2 = projectPointOnLine(pt1, l2);
-		//
-		// pt5 = projectPointOnCircle(pt1, circle2);
+		circle1 = lightPosition ^ pt2 ^ pt3;
+		circum = -circle1 / (ei<double>() < circle1);
+		circlePos.x = circum[E1];
+		circlePos.y = circum[E2];
+		circleRadius = distance(circum, lightPosition);
+		circle2Pos.x = circum2[E1];
+		circle2Pos.y = circum2[E2];
+		pp1 = circle1 | circle2;
+		pp2 = lightPosition ^ pt2;
+		pp2_1 = pp2 / (- pp2 | ei<double>());
+		pp2_1 = -pp2_1;
+		pp4 = getIntersection(circle1, circle2);
+		pp4_line = pp4 ^ ei<double>();
+		
+		l0 = lightPosition ^ pt2 ^ ei<double>();
+		intersection2 = e0<double>() | getIntersection(l1, l0);
+		intersection2 = normalize(intersection2);
+		intersection3 = e0<double>() | getIntersection(l2, l0);
+		intersection3 = normalize(intersection3);
+		
+		lightPosition_on_l1 = projectPointOnLine(lightPosition, l1);
+		lightPosition_on_l2 = projectPointOnLine(lightPosition, l2);
+		
+		pt5 = projectPointOnCircle(lightPosition, circle2);
 
-		// Compute canvas
-#if 0
 		glBegin(GL_POINTS);
-#pragma omp parallel for
-			for (int i = -WIDTH/2 + padding; i < WIDTH/2 - padding; i++) {
-#pragma omp parallel for
-				for (int j = -HEIGHT/2 + padding; j < HEIGHT/2 - padding; j++) {
-					{
-						auto currentPixel = point((double) i, (double) j);
-
-						// float distanceFromLight = sqrt((mainLight.pos().x - i) * (mainLight.pos().x - i) + (mainLight.pos().y - j) * (mainLight.pos().y - j));
-						float distanceFromLight = distance(point(mainLight.pos()), currentPixel);
-						if (distanceFromLight > mainLight.size()) {
-							// The pixel is too far from the light source
-							glColor3f(ambientIntensity, ambientIntensity, ambientIntensity);
-						} else {
-							// float intensity = lerp(ambientIntensity, 1., 1. - (distance / lightSize));
-							bool isIntersected = false;
-							for (auto &obstacle : obstacles) {
-
-								if (isPointInCircle(currentPixel, obstacle)) {
-									isIntersected = true;
-									break;
-								}
-
-								if (areIntersected(line(currentPixel, pt1), obstacle)) {
-									if (distance(projectPointOnCircle(currentPixel, obstacle), pt1) <= distance(currentPixel, pt1)) {
-										isIntersected = true;
-										break;
-									}
-								}
-							}
-							float intensity;
-							if (isIntersected) {
-								intensity = ambientIntensity;
-							} else {
-								intensity = easeIn(1.f - (distanceFromLight / mainLight.size()), ambientIntensity, 1.f, 1.f);
-							}
-							glColor3f(intensity, intensity, intensity);
-						}
-
-						// float distanceFromCircle = sqrt((circlePos.x - i) * (circlePos.x - i) + (circlePos.y - j) * (circlePos.y - j));
-						// if (distanceFromCircle < circleRadius && distanceFromCircle > circleRadius - 2.f) {
-						// 	glColor3f(1., ambientIntensity, ambientIntensity);
-						// }
-						//
-						// distanceFromCircle = sqrt((circle2Pos.x - i) * (circle2Pos.x - i) + (circle2Pos.y - j) * (circle2Pos.y - j));
-						// if (distanceFromCircle < circle2Radius && distanceFromCircle > circle2Radius - 2.f) {
-						// 	glColor3f(ambientIntensity, 1., ambientIntensity);
-						// }
-
-						glVertex2f(i, j);
-					}
-				}
-			}
-#endif
-#if 0
 			// RED
 			glColor3f(1.f, 0.f, 0.f);
-			// drawPoint(pt2);
-			// drawPoint(pt3);
+			drawPoint(pt2);
+			drawPoint(pt3);
 			drawPoint(intersection1);
-			drawPoint(pt1_on_l1);
-			drawPoint(pt1_on_l2);
-			drawPoint(projectPointOnCircle(pt1, circle3));
+			drawPoint(lightPosition_on_l1);
+			drawPoint(lightPosition_on_l2);
+			drawPoint(projectPointOnCircle(lightPosition, circle3));
 
 			// BLUE
 			glColor3f(0.f, 0.f, 1.f);
@@ -600,12 +550,12 @@ int main(int argc, char** argv) {
 			drawPoint(c);
 			drawPoint(d);
 
-			if (isPointInCircle(pt1, circle2)) {
+			if (isPointInCircle(lightPosition, circle2)) {
 				glColor3f(1.f, 0.f, 0.f);
 			} else {
 				glColor3f(1.f, 1.f, 0.f);
 			}
-			drawPoint(pt1);
+			drawPoint(lightPosition);
 
 			if ((pp4*pp4) >= 0) {
 				glColor3f(1.f, 0.f, 0.f);
@@ -617,7 +567,7 @@ int main(int argc, char** argv) {
 
 			glColor3f(1.f, 0.f, 1.f);
 			drawPoint(pt5);
-			drawPoint(l1 * pt1 / l1);
+			drawPoint(l1 * lightPosition / l1);
 
 		glEnd(); // End draw GL_POINTS
 
@@ -631,7 +581,6 @@ int main(int argc, char** argv) {
 		glColor3f(1.f, 1.f, 0.f);
 		// drawCircle(circum, circleRadius);
 		drawCircle(circum3, circle3Radius);
-
 #endif
 
 		// Update the display
@@ -639,16 +588,14 @@ int main(int argc, char** argv) {
 
 		// FPS count
 		auto end = std::chrono::system_clock::now();
-		std::chrono::duration<double> elapsed_seconds = end-start;
+		std::chrono::duration<double> elapsed_seconds = end - start;
 		std::time_t end_time = std::chrono::system_clock::to_time_t(end);
-		// std::cout << "elapsed time: " << elapsed_seconds.count() << "s" << std::endl;
-		// std::cout << "time: " << time << std::endl;
-		// std::cout << "fmod(time, 10.f): " << fmod(time, 10.f) << std::endl;
-		if (last_time_disp > 5.f) {
+		if (fmod(time, 10.f) < .1f)
+		{
+			std::cout << "time: " << time << std::endl;
+			std::cout << "elapsed time: " << elapsed_seconds.count() << "s" << std::endl;
 			std::cout << 1.0 / elapsed_seconds.count() << " FPS" << std::endl;
-			last_time_disp = 0.f;
 		}
-		last_time_disp += 0.01f;
 	}
 
 	glDeleteBuffers(1, &vbo);
