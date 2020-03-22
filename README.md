@@ -4,6 +4,8 @@
 
 Geometric Algebra 2D Raytracer using c2ga (from Garamon) and OpenGL.
 
+![](images/ga_raytracer.png)
+
 ## Getting started
 
 ```bash
