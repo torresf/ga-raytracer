@@ -16,9 +16,15 @@ make -j
 src/ga-raytracer
 ```
 
-## Notes
+## Controls
 
-The inner product of two normalized points gives the square of the Euclidean distance.
+| Maintenir clic gauche et déplacer sa souris | Déplacer la lumière dans la scène                                                       |
+|---------------------------------------------|-----------------------------------------------------------------------------------------|
+| +                                           | Augmenter la taille (rayon) de la lumière                                               |
+| -                                           | Diminuer la taille (rayon) de la lumière                                                |
+| ⬆ (Flèche du haut)                          | Augmenter l’intensité de la lumière                                                     |
+| ⬇ (Flèche du bas)                           | Diminuer l’intensité de la lumière                                                      |
+| S                                           | Basculer entre différents modes d’ombres : Aucune ombre Ombres basiques Ombres avancées |
 
 ## Optimisation
 
